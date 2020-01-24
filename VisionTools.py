@@ -454,7 +454,7 @@ def resize(image, width=None, height=None, inter=cv2.INTER_AREA):
     return resized
 
 
-def showimg(img, cmap="gray", maximize=False):
+def showimg(img, overlay_mask=None, cmap="gray", overlay_cmap="RdBu"):
     """
     Plot an RGB or grayscale image using matplotlib.pyplot
 
@@ -462,8 +462,6 @@ def showimg(img, cmap="gray", maximize=False):
     :type img: np.core.multiarray.ndarray
     :param cmap: Colormap to use if image is 1D. Examples: gray, hot, hot_r, jet, jet_r, summer, rainbow, ...
     :type cmap: str
-    :param maximize: Maximize plot window?
-    :type maximize: bool
     :return: Figure containing the plotted image
     :rtype: matplotlib.figure.Figure
     """
@@ -476,29 +474,19 @@ def showimg(img, cmap="gray", maximize=False):
     # Window size
     fig = plt.figure()
     fig.set_size_inches(figure_width_inches, figure_height_inches, forward=True)
-    # mngr = plt.get_current_fig_manager()  # get the QTCore PyRect object
-    # if maximize:
-    #     mngr.window.showMaximized()
-    # else:
-    #     geom = mngr.window.geometry()
-    #     x, y, dx, dy = geom.getRect()
-    #     fig.set_size_inches(figure_width_inches, figure_height_inches, forward=True)
-    #     geom = mngr.window.geometry()
-    #     x2, y2, dx2, dy2 = geom.getRect()
-    #     new_x = max(2, x + dx / 2 - dx2 / 2)  # Do not move the window (incl. window border) off the screen
-    #     new_y = max(39, y + dy / 2 - dy2 / 2)  # Do not move the window (incl. window border) off the screen
-    #     mngr.window.setGeometry(new_x, new_y, dx2, dy2)
 
     # Show image
-    if len(img.shape) == 1:
+    img = np.squeeze(img)
+    if img.ndim == 1:
         plt.plot(img)
-    elif len(img.shape) <= 2 or img.shape[2] == 1 or cmap is None:
-        plt.imshow(img, cmap=cmap, interpolation="none")
     else:
-        plt.imshow(img, interpolation="none")
+        plt.imshow(img, cmap=cmap)
+
+        if overlay_mask is not None:
+            masked = np.ma.masked_where(overlay_mask == 0, overlay_mask)
+            plt.imshow(masked, overlay_cmap, alpha=0.5)
 
     # Trim margins
-    plt.subplots_adjust(left=0.02, right=0.98, top=0.93, bottom=0.02)
+    plt.tight_layout()  # plt.subplots_adjust(left=0.02, right=0.98, top=0.93, bottom=0.02)
     plt.show()
-
     return fig
