@@ -454,6 +454,15 @@ def resize(image, width=None, height=None, inter=cv2.INTER_AREA):
     return resized
 
 
+def adjust_gamma(image, gamma=None, desired_intensity=None):
+    assert gamma or desired_intensity, "gamma or desired_intensity must be set"
+    if desired_intensity is not None:
+        gamma = np.log(image.mean()/255) / np.log(desired_intensity/255)
+    # build a lookup table mapping the pixel values [0, 255] to their adjusted gamma values
+    table = np.array([((i / 255.0) ** (1.0 / gamma)) * 255 for i in np.arange(0, 256)]).astype(np.uint8)
+    return cv2.LUT(image, table)
+
+
 def showimg(img, overlay_mask=None, cmap="gray", overlay_cmap="RdBu"):
     """
     Plot an RGB or grayscale image using matplotlib.pyplot
