@@ -144,7 +144,7 @@ def bw_reconstruct(marker, mask):
     areas_num, labels = cv2.connectedComponents(mask.astype(np.uint8))
     labels_to_keep = np.unique(labels[marker.astype(np.bool)])
     labels_to_keep = labels_to_keep[1:] if labels_to_keep.size and labels_to_keep[0] == 0 else labels_to_keep
-    out_mask = isin(labels, labels_to_keep)
+    out_mask = np.isin(labels, labels_to_keep)
     return out_mask
 
 
