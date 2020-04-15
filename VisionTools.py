@@ -463,14 +463,25 @@ def adjust_gamma(image, gamma=None, desired_intensity=None):
     return cv2.LUT(image, table)
 
 
+def bw_remove_empty_lines(image):
+    good_rows = image.any(axis=1)
+    image = image[good_rows, :]
+    good_columns = image.any(axis=0)
+    return image[:, good_columns]
+
+
 def showimg(img, overlay_mask=None, cmap="gray", overlay_cmap="RdBu"):
     """
     Plot an RGB or grayscale image using matplotlib.pyplot
 
     :param img: Image to plot.
     :type img: np.core.multiarray.ndarray
-    :param cmap: Colormap to use if image is 1D. Examples: gray, hot, hot_r, jet, jet_r, summer, rainbow, ...
+    :param overlay_mask: Binary mask for colored overlay
+    :type overlay_mask: np.core.multiarray.ndarray
+    :param cmap: Colormap to use. Examples: gray, hot, hot_r, jet, jet_r, summer, rainbow, ...
     :type cmap: str
+    :param overlay_cmap: Colormap for image. Examples: gray, hot, hot_r, jet, jet_r, summer, rainbow, ...
+    :type overlay_cmap: str
     :return: Figure containing the plotted image
     :rtype: matplotlib.figure.Figure
     """
