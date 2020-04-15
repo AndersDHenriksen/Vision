@@ -131,9 +131,9 @@ def bw_edge(mask, include_at_border=False):
 def bw_reconstruct(marker, mask):
     """
     Performs morphological reconstruction of the image marker under the image mask. Inspired by MATLABs bwreconstruct.
-    [1, 1, 0]   [0, 0, 0]    [0, 0, 0]
+    [0, 0, 0]   [1, 1, 0]    [0, 0, 0]
     [0, 0, 0] , [0, 0, 0] -> [0, 0, 0]
-    [1, 1, 1]   [0, 1, 0]    [1, 1, 1]
+    [0, 1, 0]   [1, 1, 1]    [1, 1, 1]
     :param marker: Binary mask indicating which of masks connected components to keep.
     :type marker: np.core.multiarray.ndarray
     :param mask: Binary mask with connected components which are filtered.
