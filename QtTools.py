@@ -59,7 +59,7 @@ class QDarkPalette(qtg.QPalette):
         self.set_stylesheet(app)
 
 
-class setup_logger(qtc.QObject):
+class SetupLogger(qtc.QObject):
 
     def __init__(self, log_q_text_edit=None, log_file_name=None):
 
