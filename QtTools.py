@@ -62,7 +62,7 @@ class QDarkPalette(qtg.QPalette):
 class SetupLogger(qtc.QObject):
 
     def __init__(self, log_q_text_edit=None, log_file_name=None):
-
+        super().__init__()
         logging.basicConfig(stream=sys.stdout, level=logging.DEBUG, format='%(asctime)s | %(levelname)5s | %(message)s')
         self.logger = logging.getLogger()
         self.log_out = log_q_text_edit
