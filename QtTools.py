@@ -1,4 +1,9 @@
+import sys
+import logging
+
+from PyQt5 import QtWidgets as qtw
 from PyQt5 import QtGui as qtg
+from PyQt5 import QtCore as qtc
 
 
 WHITE =     qtg.QColor(255, 255, 255)
@@ -52,3 +57,43 @@ class QDarkPalette(qtg.QPalette):
         app.setStyle("Fusion")
         app.setPalette(self)
         self.set_stylesheet(app)
+
+
+class setup_logger(qtc.QObject):
+
+    def __init__(self, log_q_text_edit=None, log_file_name=None):
+
+        logging.basicConfig(stream=sys.stdout, level=logging.DEBUG, format='%(asctime)s | %(levelname)5s | %(message)s')
+        self.logger = logging.getLogger()
+        self.log_out = log_q_text_edit
+        self._text_field_stream = TextFieldStream()
+
+        # Set up log handler
+        handlers = []
+        if log_file_name is not None:
+            handlers.append(logging.FileHandler(log_file_name))
+        if log_q_text_edit is not None:
+            handlers.append(self._text_field_stream)
+        for handler in handlers:
+            self.logger.addHandler(handler)
+            self.logger.handlers[-1].setFormatter(self.logger.handlers[0].formatter)
+        self._text_field_stream.text_arrived.connect(self.log_append_text)
+
+    @qtc.pyqtSlot(str)
+    def log_append_text(self, msg):
+        self.log_output.setText(self.log_output.toPlainText() + msg + "\n")
+
+
+class TextFieldStream(qtc.QObject, logging.Handler):
+    text_arrived = qtc.pyqtSignal(str)
+
+    def __init__(self):
+        qtc.QObject.__init__(self)
+        logging.Handler.__init__(self)
+
+    def emit(self, record):
+        try:
+            msg = self.format(record)
+            self.text_arrived.emit(msg)
+        except Exception:
+            self.handleError(record)
