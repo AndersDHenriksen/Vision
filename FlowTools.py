@@ -1,6 +1,7 @@
 import time
 import traceback
-import functools
+from contextlib import contextmanager
+
 
 def get_timestamp(hms_seperator=':'):
     return time.strftime(f"%Y-%m-%d %H{hms_seperator}%M{hms_seperator}%S", time.localtime())
@@ -11,12 +12,9 @@ def exception_traceback(e):
     return e_tb
 
 
-def try_except_pass(func):
-    @functools.wraps(func)
-    def wrapper_decorator(*args, **kwargs):
-        try:
-            value = func(*args, **kwargs)
-        except:
-            value = None
-        return value
-    return wrapper_decorator
+@contextmanager
+def try_except_pass():
+    try:
+        yield
+    except:
+        pass
