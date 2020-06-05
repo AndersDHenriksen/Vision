@@ -77,11 +77,12 @@ class SetupLogger(qtc.QObject):
         for handler in handlers:
             self.logger.addHandler(handler)
             self.logger.handlers[-1].setFormatter(self.logger.handlers[0].formatter)
-        self._text_field_stream.text_arrived.connect(self.log_append_text)
+        # self._text_field_stream.text_arrived.connect(self.log_append_text)
+        self._text_field_stream.text_arrived.connect(lambda msg: self.log_append_text(msg))  # Lambda needed when no reference is kept
 
     @qtc.pyqtSlot(str)
     def log_append_text(self, msg):
-        self.log_output.setText(self.log_output.toPlainText() + msg + "\n")
+        self.log_out.setText(self.log_out.toPlainText() + msg + "\n")
 
 
 class TextFieldStream(qtc.QObject, logging.Handler):
