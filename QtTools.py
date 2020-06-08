@@ -13,6 +13,7 @@ PRIMARY =   qtg.QColor(53, 53, 53)
 SECONDARY = qtg.QColor(35, 35, 35)
 TERTIARY =  qtg.QColor(42, 130, 218)
 GREY =      qtg.QColor(128, 128, 128)
+DARKGREY =  qtg.QColor(75, 75, 75)
 
 
 class QDarkPalette(qtg.QPalette):
@@ -37,7 +38,8 @@ class QDarkPalette(qtg.QPalette):
         self.setColor(qtg.QPalette.Disabled, qtg.QPalette.Text,       GREY)
         self.setColor(qtg.QPalette.Disabled, qtg.QPalette.ButtonText, GREY)
         self.setColor(qtg.QPalette.Disabled, qtg.QPalette.WindowText, GREY)
-        self.setColor(qtg.QPalette.Disabled, qtg.QPalette.Button,     SECONDARY)
+        self.setColor(qtg.QPalette.Disabled, qtg.QPalette.Button,     DARKGREY)
+        self.setColor(qtg.QPalette.Disabled, qtg.QPalette.Base,       PRIMARY)
 
         if app:
             self.set_app(app)
