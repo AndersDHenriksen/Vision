@@ -1,5 +1,6 @@
 import sys
 import logging
+from logging.handlers import RotatingFileHandler
 
 from PyQt5 import QtWidgets as qtw
 from PyQt5 import QtGui as qtg
@@ -73,7 +74,7 @@ class SetupLogger(qtc.QObject):
         # Set up log handler
         handlers = []
         if log_file_name is not None:
-            handlers.append(logging.FileHandler(log_file_name))
+            handlers.append(RotatingFileHandler(log_file_name, maxBytes=5 * 1024 * 1024, delay=True))
         if log_q_text_edit is not None:
             handlers.append(self._text_field_stream)
         for handler in handlers:
