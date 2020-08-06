@@ -240,7 +240,7 @@ def bw_left_and_right_edge(bw_image):
     return left_edge, right_edge
 
 
-def bw_bottom_and_top_edge(bw_image):
+def bw_top_and_bottom_edge(bw_image):
     """ See bw_left_and_right_edge """
     return bw_left_and_right_edge(bw_image.T)
 
