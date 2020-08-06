@@ -225,6 +225,21 @@ def bw_clear_border(mask):
     return mask ^ bw_reconstruct(marker, mask)
 
 
+def bw_left_and_right_edge(bw_image):
+    """
+    Find the left and right edge, i.e. left/right-most True pixels idx for each row.
+    :param bw_image: Binary mask to find left and right edge in
+    :type bw_image: np.ndarray
+    :return: (left_edge, right_edge) as np.arrays
+    :rtype: tuple
+    """
+    assert bw_image.any(axis=1).all()
+    vs, us = np.where(bw_image)
+    right_edge = us[np.append(np.diff(vs) > 0, True)]
+    left_edge = us[np.append(True, np.diff(vs) > 0)]
+    return left_edge, right_edge
+
+
 def find(a, if_none=np.nan):
     """
     Similar to np.flatnonzero but if no True elements in a, then find return np.array([if_none]) so find(a)[0] still
