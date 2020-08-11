@@ -2,42 +2,6 @@ import numpy as np
 import cv2
 
 
-def find_clusters(a, allowed_jump=0, min_size=1):
-    """
-    Find clusters, where the index has jumps/discontinuities, i.e. [1, 2, 3, 7, 8, 9] contains 2 clusters. Input can
-    also be boolean array.
-
-    :param a: Array for cluster search. Can be array of index or bool values.
-    :type a: np.core.multiarray.ndarray
-    :param allowed_jump: Discontinuities which should not be considered a cluster break
-    :type allowed_jump: int
-    :param min_size: Minimum cluster size to keep
-    :type min_size: int
-    :return: List of clusters as np.arrays
-    :rtype: list
-    """
-
-    # Convert to index if bool
-    if a.dtype == np.bool:
-        a = np.flatnonzero(a)
-
-    # Walk through array and find clusters
-    da = np.diff(a)
-    clusters = []
-    current_cluster_size = 1
-    for i in range(1, len(a)):
-        if da[i-1] > allowed_jump + 1:
-            if current_cluster_size >= min_size:
-                clusters.append(a[i-current_cluster_size:i])
-            current_cluster_size = 1
-        else:
-            current_cluster_size += 1
-    if current_cluster_size >= min_size:
-        clusters.append(a[len(a) - current_cluster_size:])
-
-    return clusters
-
-
 def morph(kind, image, strel_shape, strel_kind='rect'):
     """
     Wrapper for the different opencv morphology operations. Will also work on int/bool images and 1d vectors.
@@ -94,21 +58,6 @@ def morph(kind, image, strel_shape, strel_kind='rect'):
     return out
 
 
-def rolling_window(a, window):
-    """
-    Split array into rolling window components, e.g. [3,4,5] , window=2 -> [[3,4], [4,5]]
-    :param a: Array to split into window size
-    :type a: np.core.multiarray.ndarray
-    :param window: Window size
-    :type window: int
-    :return: Array of window arrays
-    :rtype: np.core.multiarray.ndarray
-    """
-    if a.size < window:
-        return np.array([])
-    return np.lib.stride_tricks.as_strided(a, [a.size + 1 - window, window], (a.strides[0], a.strides[0]))
-
-
 def bw_edge(mask, include_at_border=False):
     """
     Find edges in binary mask. Edge pixels at the mask borders can optionally be included.
@@ -146,22 +95,6 @@ def bw_reconstruct(marker, mask):
     labels_to_keep = labels_to_keep[1:] if labels_to_keep.size and labels_to_keep[0] == 0 else labels_to_keep
     out_mask = np.isin(labels, labels_to_keep)
     return out_mask
-
-
-def cc_masks(mask):
-    """
-    Extract each connected component (cc) in its own image and return the array of these images
-    :param mask: Binary mask to split into array with each cc separated
-    :type mask: np.core.multiarray.ndarray
-    :return: Array of separate cc
-    :rtype: np.core.multiarray.ndarray
-    """
-    areas_num, labels = cv2.connectedComponents(mask.astype(np.uint8))
-    cc_stack = np.zeros((areas_num - 1, labels.shape[0], labels.shape[1]), np.bool)
-    i_cor, j_cor = np.meshgrid(np.arange(labels.shape[0]), np.arange(labels.shape[1]), indexing='ij')
-    mask = mask.astype(np.bool)
-    cc_stack[labels[mask] - 1, i_cor[mask], j_cor[mask]] = True
-    return cc_stack, labels
 
 
 def bw_area_filter(mask, n=1, area_range=(0, np.inf), output='both'):
@@ -212,6 +145,24 @@ def bw_fill(mask):
     return mask_out.astype(np.bool)
 
 
+def bw_convexhull(mask):
+    """
+    Get the convex hull mask of a binary mask, using opencv findContours.
+    :param mask: Input binary mask
+    :type mask: np.core.multiarray.ndarray
+    :return: Convex hull of input mask
+    :rtype mask: np.core.multiarray.ndarray
+    """
+    out_mask, contours, hierarchy = cv2.findContours(mask.astype(np.uint8), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+    # for each contour create convex hull object
+    hull = []
+    for contour in contours:
+        hull.append(cv2.convexHull(contour, False))
+    cv2.drawContours(out_mask, hull, contourIdx=-1, color=(255), thickness=-1)
+    return out_mask
+
+
 def bw_clear_border(mask):
     """
     Remove any connected components touching the image border.
@@ -223,6 +174,13 @@ def bw_clear_border(mask):
     marker = np.zeros_like(mask)
     marker[(0, -1), :] = marker[:, (0, -1)] = True
     return mask ^ bw_reconstruct(marker, mask)
+
+
+def bw_remove_empty_lines(image):
+    good_rows = image.any(axis=1)
+    image = image[good_rows, :]
+    good_columns = image.any(axis=0)
+    return image[:, good_columns]
 
 
 def bw_left_and_right_edge(bw_image):
@@ -245,30 +203,31 @@ def bw_top_and_bottom_edge(bw_image):
     return bw_left_and_right_edge(bw_image.T)
 
 
-def find(a, if_none=np.nan):
+def imgradient(img):
     """
-    Similar to np.flatnonzero but if no True elements in a, then find return np.array([if_none]) so find(a)[0] still
-    works.
-    :param a: Array from which True indexes are return
-    :type a: np.core.multiarray.ndarray
-    :param if_none: Element or fake-index to return if no True elements in a
-    :type if_none: float
-    :return: Array with indexes
+    Calculates the (Sobel) gradient magnitude of the image.
+    :param img: Image from which to cacluate gradients
+    :type img: np.core.multiarray.ndarray
+    :return: Gradient magnitude image
     :rtype: np.core.multiarray.ndarray
     """
-    a_idx = np.flatnonzero(a)
-    return a_idx if a_idx.size else np.array([if_none])
+    return np.sqrt(cv2.Sobel(img, cv2.CV_64F, 1, 0) ** 2 + cv2.Sobel(img, cv2.CV_64F, 0, 1) ** 2)
 
 
-def intr(a):
+def cc_masks(mask):
     """
-    Round and convert to integer. Especially useful for indexing.
-    :param a: Array or float to round and cast
-    :type a: Union[float, np.core.multiarray.ndarray]
-    :return: Rounded integer or array of ints
-    :rtype: Union[float, np.core.multiarray.ndarray]
+    Extract each connected component (cc) in its own image and return the array of these images
+    :param mask: Binary mask to split into array with each cc separated
+    :type mask: np.core.multiarray.ndarray
+    :return: Array of separate cc
+    :rtype: np.core.multiarray.ndarray
     """
-    return np.round(a).astype(np.int) if isinstance(a, np.ndarray) else int(round(a))
+    areas_num, labels = cv2.connectedComponents(mask.astype(np.uint8))
+    cc_stack = np.zeros((areas_num - 1, labels.shape[0], labels.shape[1]), np.bool)
+    i_cor, j_cor = np.meshgrid(np.arange(labels.shape[0]), np.arange(labels.shape[1]), indexing='ij')
+    mask = mask.astype(np.bool)
+    cc_stack[labels[mask] - 1, i_cor[mask], j_cor[mask]] = True
+    return cc_stack, labels
 
 
 def argmin_nd(a):
@@ -293,31 +252,10 @@ def argmax_nd(a):
     return np.unravel_index(a.argmax(), a.shape)
 
 
-def imgradient(img):
-    """
-    Calculates the (Sobel) gradient magnitude of the image.
-    :param img: Image from which to cacluate gradients
-    :type img: np.core.multiarray.ndarray
-    :return: Gradient magnitude image
-    :rtype: np.core.multiarray.ndarray
-    """
-    return np.sqrt(cv2.Sobel(img, cv2.CV_64F, 1, 0) ** 2 + cv2.Sobel(img, cv2.CV_64F, 0, 1) ** 2)
-
-
-def curve_step(curve, begin_level, end_level):
-    """
-    Find the best index to split a curve into a step function based on lowest RMSE.
-    :param curve: Curve to look for step in
-    :type curve: np.core.multiarray.ndarray
-    :param begin_level: Begin value of step function to fit
-    :type begin_level: float
-    :param end_level: End value of step function to fit
-    :type end_level: float
-    :return: Curve index where step function goes from begin_level to end_level
-    :rtype: int
-    """
-    cost = np.array([np.sum((curve[:i] - begin_level)**2) + np.sum((curve[i:] - end_level)**2) for i in range(curve.size)])
-    return cost.argmin()
+def uv_centroid(bw_image):
+    M = cv2.moments(bw_image.astype(np.uint8))
+    uv = intr(np.array([M["m10"], M["m01"]]) / M["m00"])
+    return uv
 
 
 def uv_coordinates(matrix, indexing='uv'):
@@ -420,12 +358,6 @@ def image_crop(image, point, sides, is_point_center=False, indexing='ij', assign
     image[i[0]: i[1], j[0]: j[1], ...] = assign
 
 
-def uv_centroid(bw_image):
-    M = cv2.moments(bw_image.astype(np.uint8))
-    uv = intr(np.array([M["m10"], M["m01"]]) / M["m00"])
-    return uv
-
-
 def circular_structuring_element(kernel_size, go_big=False):
     # Create a _symmetrical_ circular structuring element (unlike OpenCV's built-in circular structuring element)
     assert (kernel_size % 2 == 1)  # Only for odd kernel sizes
@@ -483,11 +415,228 @@ def adjust_gamma(image, gamma=None, desired_intensity=None):
     return cv2.LUT(image, table)
 
 
-def bw_remove_empty_lines(image):
-    good_rows = image.any(axis=1)
-    image = image[good_rows, :]
-    good_columns = image.any(axis=0)
-    return image[:, good_columns]
+def find(a, if_none=np.nan):
+    """
+    Similar to np.flatnonzero but if no True elements in a, then find return np.array([if_none]) so find(a)[0] still
+    works.
+    :param a: Array from which True indexes are return
+    :type a: np.core.multiarray.ndarray
+    :param if_none: Element or fake-index to return if no True elements in a
+    :type if_none: float
+    :return: Array with indexes
+    :rtype: np.core.multiarray.ndarray
+    """
+    a_idx = np.flatnonzero(a)
+    return a_idx if a_idx.size else np.array([if_none])
+
+
+def rolling_window(a, window):
+    """
+    Split array into rolling window components, e.g. [3,4,5] , window=2 -> [[3,4], [4,5]]
+    :param a: Array to split into window size
+    :type a: np.core.multiarray.ndarray
+    :param window: Window size
+    :type window: int
+    :return: Array of window arrays
+    :rtype: np.core.multiarray.ndarray
+    """
+    if a.size < window:
+        return np.array([])
+    return np.lib.stride_tricks.as_strided(a, [a.size + 1 - window, window], (a.strides[0], a.strides[0]))
+
+
+def running_mean(x, N):
+    """
+    Calculate the running mean of an array.
+    :param x: Array to calculate the running mean of.
+    :type x: np.core.multiarray.ndarray
+    :param N: Window size
+    :type N: int
+    :return: running mean values
+    :rtype: np.core.multiarray.ndarray
+    """
+    cumsum = np.cumsum(np.insert(x, 0, 0))
+    return (cumsum[N:] - cumsum[:-N]) / float(N)
+
+
+def find_clusters(a, allowed_jump=0, min_size=1):
+    """
+    Find clusters, where the index has jumps/discontinuities, i.e. [1, 2, 3, 7, 8, 9] contains 2 clusters. Input can
+    also be boolean array.
+
+    :param a: Array for cluster search. Can be array of index or bool values.
+    :type a: np.core.multiarray.ndarray
+    :param allowed_jump: Discontinuities which should not be considered a cluster break
+    :type allowed_jump: int
+    :param min_size: Minimum cluster size to keep
+    :type min_size: int
+    :return: List of clusters as np.arrays
+    :rtype: list
+    """
+
+    # Convert to index if bool
+    if a.dtype == np.bool:
+        a = np.flatnonzero(a)
+
+    # Walk through array and find clusters
+    da = np.diff(a)
+    clusters = []
+    current_cluster_size = 1
+    for i in range(1, len(a)):
+        if da[i-1] > allowed_jump + 1:
+            if current_cluster_size >= min_size:
+                clusters.append(a[i-current_cluster_size:i])
+            current_cluster_size = 1
+        else:
+            current_cluster_size += 1
+    if current_cluster_size >= min_size:
+        clusters.append(a[len(a) - current_cluster_size:])
+
+    return clusters
+
+
+def curve_step(curve, begin_level, end_level):
+    """
+    Find the best index to split a curve into a step function based on lowest RMSE.
+    :param curve: Curve to look for step in
+    :type curve: np.core.multiarray.ndarray
+    :param begin_level: Begin value of step function to fit
+    :type begin_level: float
+    :param end_level: End value of step function to fit
+    :type end_level: float
+    :return: Curve index where step function goes from begin_level to end_level
+    :rtype: int
+    """
+    cost = np.array([np.sum((curve[:i] - begin_level)**2) + np.sum((curve[i:] - end_level)**2) for i in range(curve.size)])
+    return cost.argmin()
+
+
+def local_maximum(a, include_edge_maxima=False):
+    """
+    Get position of all local maximum in array.
+    :param a: Array to find lccal maximum in
+    :type a: np.core.multiarray.ndarray
+    :param include_edge_maxima: Whether to include local maximum at ends of array
+    :type include_edge_maxima: bool
+    :return: Array of positions/index which are local maximum
+    :rtype: np.core.multiarray.ndarray
+    """
+    if a is None or len(a) == 0:
+        return np.array([])
+    da = np.diff(a)
+    dap = np.flatnonzero(da >= 0)
+    dan = np.flatnonzero(da <= 0)
+    not_plateau = da != 0
+    if not dan.size or not dap.size:
+        if not include_edge_maxima:
+            return np.array([])
+        return np.array(np.flatnonzero(a == a.max()).mean())
+    dap_stops = dap[np.flatnonzero(np.append(np.diff(dap) > 1, True))] + 1
+    if not include_edge_maxima and dap_stops[-1] == da.size:
+        dap_stops = dap_stops[:-1]
+    if not dap_stops.size:
+        return np.array([])
+    dan_stops = dan[np.flatnonzero(np.append(np.diff(dan) > 1, True))] + 1
+    next_idx = 0 if include_edge_maxima or da[0] > 0 else dan_stops[0]
+    is_dap_local_max = np.zeros(dap_stops.shape, np.bool)
+    while next_idx < dap_stops[-1]:
+        is_dap_local_max[find(dap_stops > next_idx)[0]] = True
+        next_idx = dan_stops[dan_stops > next_idx][0] if dan_stops[-1] > next_idx else da.size
+    local_max = dap_stops[is_dap_local_max]
+    adjusted_local_max = np.array([lm - find(not_plateau[lm - 1::-1], if_none=lm)[0]/2 for lm in local_max])
+    if include_edge_maxima and da[0] < 0:
+        adjusted_local_max = np.insert(adjusted_local_max, 0, 0)
+    return adjusted_local_max
+
+
+def weighted_3point_extrema(array):
+    """
+    Find the (weighted) extrema index of 3 points, assuming middle point is the maximum or minimum of the 3 points.
+    :param array: Array of 3 points.
+    :type array: np.core.multiarray.ndarray
+    :return: Sub-integer index of extrema.
+    :rtype: float
+    """
+    assert array.size == 3
+    p_coef = np.polyfit(np.arange(3), array, 2)
+    return -p_coef[1] / p_coef[0] / 2
+
+
+def sub_integer_extrema(array, extrema_index):
+    """
+    Take an extrema index of an array and find the sub-integer extrema index.
+    :param array: Data array.
+    :type array: np.core.multiarray.ndarray
+    :param extrema_index: Index of an extrema in array.
+    :type array: int
+    :return: Sub-integer index of extrema.
+    :rtype: float
+    """
+    return weighted_3point_extrema(array[extrema_index - 1: extrema_index + 2]) + extrema_index - 1
+
+
+def distance_point_to_line(line_pt1, line_pt2, pt):
+    """
+    Calculates the distance from point pt to the line going through line_pt1 and line_pt2.
+    Note that the point can be either 2D (e.g. uv) or 3D (e.g. xyz).
+    https://stackoverflow.com/a/39840218/1447415
+    https://math.stackexchange.com/questions/1292212/cross-product-of-vectors-distance-from-a-line
+    :param line_pt1: First point on the line given as an np.array of size 1x2 or 1x3.
+    :type line_pt1: np.core.multiarray.ndarray
+    :param line_pt2: Second point on the line given as an np.array of size 1x2 or 1x3.
+    :type line_pt2: np.core.multiarray.ndarray
+    :param pt: Point not (necessarily) on the line given as an np.array of size 1x2 or 1x3.
+    :type pt: np.core.multiarray.ndarray
+    :return: Distance from the point 'pt' to the line.
+    :rtype: float
+    """
+    line_vec = line_pt2 - line_pt1
+    dist = np.linalg.norm(np.cross(line_vec, line_pt1 - pt)) / np.linalg.norm(line_vec)
+    return dist
+
+
+def intr(a):
+    """
+    Round and convert to integer. Especially useful for indexing.
+    :param a: Array or float to round and cast
+    :type a: Union[float, np.core.multiarray.ndarray]
+    :return: Rounded integer or array of ints
+    :rtype: Union[float, np.core.multiarray.ndarray]
+    """
+    return np.round(a).astype(np.int) if isinstance(a, np.ndarray) else int(round(a))
+
+
+def overlay_alpha_mask_on_image(image, mask, color=(255, 0, 0), alpha=0.2, invert_mask=False):
+    """
+    Adds a transparent, colored overlay to an image below a given mask.
+    Possible extensions:
+    - Color should also be able to be a string, e.g. "r" for (255, 0, 0) etc.
+    - A two-mask version of this! Choose color for each and inversion, maybe choose color for combination!
+    :param image: Image to add overlay to (not in-place). Can be monochrome or RGB.
+    :type image: np.core.multiarray.ndarray
+    :param mask: Binary mask of the same size as the image. Values must be 0 or 255.
+    :type mask: np.core.multiarray.ndarray
+    :param color: The color of the overlay as an RGB tuple, e.g. (255, 0, 0) for red.
+    :type color: tuple
+    :param alpha: The opacity of the overlay. 0.0 means fully transparent, 1.0 means fully opaque.
+    :type alpha: float
+    :param invert_mask: Use the inverted mask instead.
+    :type invert_mask: bool
+    :return: A copy of the image with a transparent, colored overlay below the mask.
+    :rtype: np.core.multiarray.ndarray
+    """
+    assert image.ndim in [2, 3]
+    assert mask.ndim == 2
+    assert len(color) == 3
+    assert 0.0 <= alpha <= 1
+    image_below = image.copy() if image.ndim == 3 else np.dstack([image, image, image])
+    overlay = image_below.copy()
+    if invert_mask:
+        overlay[mask != 255] = color
+    else:
+        overlay[mask == 255] = color
+    image_with_overlay = cv2.addWeighted(overlay, alpha, image_below, 1.0 - alpha, 0.0)
+    return image_with_overlay
 
 
 def showimg(img, overlay_mask=None, cmap="gray", overlay_cmap="RdBu"):
