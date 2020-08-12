@@ -459,6 +459,19 @@ def running_mean(x, N):
     return (cumsum[N:] - cumsum[:-N]) / float(N)
 
 
+def diff_long(x, stepsize):
+    """
+    Diff with a larger window. diff_long(x,1) = np.diff(x)
+    :param x: Array to differentiate
+    :type x: np.core.multiarray.ndarray
+    :param stepsize:
+    :type stepsize: int
+    :return: diffed values
+    :rtype: np.core.multiarray.ndarray
+    """
+    return x[stepsize:] - x[:stepsize]
+
+
 def find_clusters(a, allowed_jump=0, min_size=1):
     """
     Find clusters, where the index has jumps/discontinuities, i.e. [1, 2, 3, 7, 8, 9] contains 2 clusters. Input can
