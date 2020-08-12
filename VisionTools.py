@@ -469,7 +469,7 @@ def diff_long(x, stepsize):
     :return: diffed values
     :rtype: np.core.multiarray.ndarray
     """
-    return x[stepsize:] - x[:stepsize]
+    return x[stepsize:] - x[:-stepsize]
 
 
 def find_clusters(a, allowed_jump=0, min_size=1):
