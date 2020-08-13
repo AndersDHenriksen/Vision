@@ -101,3 +101,24 @@ class TextFieldStream(qtc.QObject, logging.Handler):
             self.text_arrived.emit(msg)
         except Exception:
             self.handleError(record)
+
+
+class TagMonitor(qtc.QObject):
+
+    def __init__(self, tag, comm, python_class, interval_ms=50):
+        super(TagMonitor, self).__init__()
+        self.tag = tag
+        self.comm = comm
+        self.python_class = python_class
+        self.change_signal = qtc.pyqtSignal(python_class)
+        self.last_value = python_class(self.comm.read(self.tag))
+        self.timer = qtc.QTimer()
+        self.timer.setInterval(interval_ms)
+        self.timer.timeout.connect(self.check_tag)
+        self.timer.start()
+
+    def check_tag(self):
+        value = self.python_class(self.comm.read(self.tag))
+        if value != self.last_value:
+            self.last_value = value
+            self.change_signal.emit(value)
