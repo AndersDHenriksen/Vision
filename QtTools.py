@@ -103,7 +103,7 @@ class TextFieldStream(qtc.QObject, logging.Handler):
             self.handleError(record)
 
 
-class TagMonitor(qtc.QObject):
+class TagMonitor(qtc.QObject):  # Designed with EthernetIP in mind
 
     def __init__(self, tag, comm, python_class, interval_ms=50):
         super(TagMonitor, self).__init__()
