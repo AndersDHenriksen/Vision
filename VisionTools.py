@@ -139,8 +139,9 @@ def bw_fill(mask):
     :return: Filled binary mask
     :rtype: np.core.multiarray.ndarray
     """
-    mask_out, contour, _ = cv2.findContours(mask.astype(np.uint8), cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
-    for cnt in contour:
+    mask_out = mask.astype(np.uint8)
+    contours, hierarchy = cv2.findContours(mask.astype(np.uint8), cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
+    for cnt in contours:
         cv2.drawContours(mask_out, [cnt], 0, 255, -1)
     return mask_out.astype(np.bool)
 
@@ -153,14 +154,15 @@ def bw_convexhull(mask):
     :return: Convex hull of input mask
     :rtype mask: np.core.multiarray.ndarray
     """
-    out_mask, contours, hierarchy = cv2.findContours(mask.astype(np.uint8), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    mask_out = mask.astype(np.uint8)
+    contours, hierarchy = cv2.findContours(mask.astype(np.uint8), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
     # for each contour create convex hull object
     hull = []
     for contour in contours:
         hull.append(cv2.convexHull(contour, False))
-    cv2.drawContours(out_mask, hull, contourIdx=-1, color=(255), thickness=-1)
-    return out_mask
+    cv2.drawContours(mask_out, hull, contourIdx=-1, color=(255), thickness=-1)
+    return mask_out.astype(np.bool)
 
 
 def bw_clear_border(mask):
@@ -586,6 +588,23 @@ def sub_integer_extrema(array, extrema_index):
     :rtype: float
     """
     return weighted_3point_extrema(array[extrema_index - 1: extrema_index + 2]) + extrema_index - 1
+
+
+def direction_from_blob(blob_mask):
+    """
+    Gives the orientation/principal-component and centroid of mask.
+    To rotate use: angle = np.arctan2(direction[1], direction[0]); rot = vt.simple_rotate(bag_mask, -angle*180/np.pi)
+    :param blob_mask: Single component binary mask
+    :type blob_mask: np.core.multiarray.ndarray
+    :return: (direction, centroid)
+    :rtype: tuple
+    """
+    blob_mask = blob_mask.astype(np.bool)
+    U, V = uv_coordinates(blob_mask)
+    A = np.c_[U[blob_mask], V[blob_mask]]
+    centroid = A.mean(axis=0)
+    direction = np.linalg.svd(A - centroid, full_matrices=False)[2][0, :]
+    return direction, centroid
 
 
 def distance_point_to_line(line_pt1, line_pt2, pt):
