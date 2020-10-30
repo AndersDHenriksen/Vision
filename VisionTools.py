@@ -638,6 +638,13 @@ def intr(a):
     return np.round(a).astype(np.int) if isinstance(a, np.ndarray) else int(round(a))
 
 
+def put_text(image, text, position_uv, font=cv2.FONT_HERSHEY_SIMPLEX, font_scale=1, color=(0, 0, 255), thickness=2):
+    """ Wrapper for cv2.putText with more defaults. """
+    if image.ndim == 2 and len(color) > 1:
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    return cv2.putText(image, text, position_uv, font, font_scale, color, thickness, cv2.LINE_AA)
+
+
 def overlay_alpha_mask_on_image(image, mask, color=(255, 0, 0), alpha=0.2, invert_mask=False):
     """
     Adds a transparent, colored overlay to an image below a given mask.
