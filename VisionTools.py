@@ -193,7 +193,7 @@ def bw_left_and_right_edge(bw_image):
     :return: (left_edge, right_edge) as np.arrays
     :rtype: tuple
     """
-    assert bw_image.any(axis=1).all()
+    assert bw_image.size and bw_image.any(axis=1).all()
     vs, us = np.where(bw_image)
     right_edge = us[np.append(np.diff(vs) > 0, True)]
     left_edge = us[np.append(True, np.diff(vs) > 0)]
