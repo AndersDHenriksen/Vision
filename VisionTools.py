@@ -645,7 +645,7 @@ def put_text(image, text, position_uv, font=cv2.FONT_HERSHEY_SIMPLEX, font_scale
     return cv2.putText(image, text, position_uv, font, font_scale, color, thickness, cv2.LINE_AA)
 
 
-def overlay_alpha_mask_on_image(image, mask, color=(255, 0, 0), alpha=0.2, invert_mask=False):
+def overlay_alpha_mask_on_image(image, mask, color=(255, 0, 0), alpha=0.5, invert_mask=False):
     """
     Adds a transparent, colored overlay to an image below a given mask.
     Possible extensions:
@@ -671,9 +671,9 @@ def overlay_alpha_mask_on_image(image, mask, color=(255, 0, 0), alpha=0.2, inver
     image_below = image.copy() if image.ndim == 3 else np.dstack([image, image, image])
     overlay = image_below.copy()
     if invert_mask:
-        overlay[mask != 255] = color
+        overlay[mask == 0] = color
     else:
-        overlay[mask == 255] = color
+        overlay[mask != 0] = color
     image_with_overlay = cv2.addWeighted(overlay, alpha, image_below, 1.0 - alpha, 0.0)
     return image_with_overlay
 
