@@ -592,19 +592,17 @@ def sub_integer_extrema(array, extrema_index):
 
 def direction_from_blob(blob_mask):
     """
-    Gives the orientation/principal-component and centroid of mask.
-    To rotate use: angle = np.arctan2(direction[1], direction[0]); rot = vt.simple_rotate(bag_mask, -angle*180/np.pi)
+    Gives the orientation/principal-component angle and centroid of mask.
+    To rotate use: rot = vt.simple_rotate(blob_mask, -angle)
     :param blob_mask: Single component binary mask
     :type blob_mask: np.core.multiarray.ndarray
-    :return: (direction, centroid)
+    :return: (angle_uv, centroid_uv)
     :rtype: tuple
     """
-    blob_mask = blob_mask.astype(np.bool)
-    U, V = uv_coordinates(blob_mask)
-    A = np.c_[U[blob_mask], V[blob_mask]]
-    centroid = A.mean(axis=0)
-    direction = np.linalg.svd(A - centroid, full_matrices=False)[2][0, :]
-    return direction, centroid
+    moments = cv2.moments(blob_mask.astype(np.uint8), True)
+    centroid_uv = intr(np.array([moments["m10"], moments["m01"]]) / moments["m00"])
+    angle_uv = np.rad2deg(np.arctan2(moments['mu11'], (moments['mu20'] - moments['mu02']) / 2) / 2)
+    return angle_uv, centroid_uv
 
 
 def distance_point_to_line(line_pt1, line_pt2, pt):
@@ -678,7 +676,7 @@ def overlay_alpha_mask_on_image(image, mask, color=(255, 0, 0), alpha=0.5, inver
     return image_with_overlay
 
 
-def showimg(img, overlay_mask=None, cmap="gray", overlay_cmap="RdBu"):
+def showimg(img, overlay_mask=None, close_on_click=False, cmap="gray", overlay_cmap="RdBu"):
     """
     Plot an RGB or grayscale image using matplotlib.pyplot
 
@@ -686,6 +684,8 @@ def showimg(img, overlay_mask=None, cmap="gray", overlay_cmap="RdBu"):
     :type img: np.core.multiarray.ndarray
     :param overlay_mask: Binary mask for colored overlay
     :type overlay_mask: np.core.multiarray.ndarray
+    :param close_on_click: Whether to close figure on button press
+    :type close_on_click: bool
     :param cmap: Colormap to use. Examples: gray, hot, hot_r, jet, jet_r, summer, rainbow, ...
     :type cmap: str
     :param overlay_cmap: Colormap for image. Examples: gray, hot, hot_r, jet, jet_r, summer, rainbow, ...
@@ -716,5 +716,9 @@ def showimg(img, overlay_mask=None, cmap="gray", overlay_cmap="RdBu"):
 
     # Trim margins
     plt.tight_layout()  # plt.subplots_adjust(left=0.02, right=0.98, top=0.93, bottom=0.02)
-    plt.show()
+    if close_on_click:
+        plt.waitforbuttonpress()
+        plt.close(fig)
+    else:
+        plt.show()
     return fig
