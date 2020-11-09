@@ -697,7 +697,7 @@ def add_overlay_to_image(image, mask, alpha=0.5, color="red", filename=None):
     if image.shape[-1] == 1:
         image = np.tile(image, (1, 1, 3))
     color_overlay = rgb_like(mask, color)
-    alpha_mask = (alpha * mask).clip(min=0, max=1)
+    alpha_mask = (alpha * mask).clip(min=0, max=1)[:, :, None]
     overlay_image = alpha_mask * color_overlay + (1 - alpha_mask) * image
     overlay_image = np.round(overlay_image).astype(np.uint8)
     if filename is not None:
