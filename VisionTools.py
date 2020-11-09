@@ -643,37 +643,66 @@ def put_text(image, text, position_uv, font=cv2.FONT_HERSHEY_SIMPLEX, font_scale
     return cv2.putText(image, text, position_uv, font, font_scale, color, thickness, cv2.LINE_AA)
 
 
-def overlay_alpha_mask_on_image(image, mask, color=(255, 0, 0), alpha=0.5, invert_mask=False):
+def rgb_like(image, color="red"):
+    """
+    Create a single color image with the same size as the input image.
+    :param image: Image for which the output will have the same size
+    :type image: np.core.multiarray.ndarray
+    :param color: The output color
+    :type color: str
+    :return: (H,W,3) single color uint8 image
+    :rtype: np.core.multiarray.ndarray
+    """
+    color = color.lower()
+    assert color in ["red", "green", "blue", "yellow", "magenta", "cyan"]
+    image = np.squeeze(image)
+    assert image.ndim in [2, 3]
+    zeros = np.zeros(image.shape[:2], np.uint8)
+    ones = 255 * np.ones(image.shape[:2], np.uint8)
+    if color == "red":
+        return np.dstack((ones, zeros, zeros))
+    elif color == "green":
+        return np.dstack((zeros, ones, zeros))
+    elif color == "blue":
+        return np.dstack((zeros, zeros, ones))
+    elif color == "yellow":
+        return np.dstack((ones, ones, zeros))
+    elif color == "magenta":
+        return np.dstack((ones, zeros, ones))
+    elif color == "cyan":
+        return np.dstack((zeros, ones, ones))
+
+
+def add_overlay_to_image(image, mask, alpha=0.5, color="red", filename=None):
     """
     Adds a transparent, colored overlay to an image below a given mask.
-    Possible extensions:
-    - Color should also be able to be a string, e.g. "r" for (255, 0, 0) etc.
-    - A two-mask version of this! Choose color for each and inversion, maybe choose color for combination!
     :param image: Image to add overlay to (not in-place). Can be monochrome or RGB.
     :type image: np.core.multiarray.ndarray
-    :param mask: Binary mask of the same size as the image. Values must be 0 or 255.
+    :param mask: Greyscale mask. Values should be between 0 and 1.
     :type mask: np.core.multiarray.ndarray
-    :param color: The color of the overlay as an RGB tuple, e.g. (255, 0, 0) for red.
-    :type color: tuple
     :param alpha: The opacity of the overlay. 0.0 means fully transparent, 1.0 means fully opaque.
     :type alpha: float
-    :param invert_mask: Use the inverted mask instead.
-    :type invert_mask: bool
+    :param color: The color of the overlay. Possible: red, green, blue, yellow, magenta, cyan
+    :type color: str
+    :param filename: Optional filename to save the overlayed images
+    :type filename: str
     :return: A copy of the image with a transparent, colored overlay below the mask.
     :rtype: np.core.multiarray.ndarray
     """
-    assert image.ndim in [2, 3]
-    assert mask.ndim == 2
-    assert len(color) == 3
-    assert 0.0 <= alpha <= 1
-    image_below = image.copy() if image.ndim == 3 else np.dstack([image, image, image])
-    overlay = image_below.copy()
-    if invert_mask:
-        overlay[mask == 0] = color
-    else:
-        overlay[mask != 0] = color
-    image_with_overlay = cv2.addWeighted(overlay, alpha, image_below, 1.0 - alpha, 0.0)
-    return image_with_overlay
+    assert mask.dtype is not np.uint8
+    if image.dtype == np.float32:
+        image = (image * 255).astype(np.uint8)
+    if image.ndim == 2:
+        image = image[..., None]
+    if image.shape[-1] == 1:
+        image = np.tile(image, (1, 1, 3))
+    color_overlay = rgb_like(mask, color)
+    alpha_mask = (alpha * mask).clip(min=0, max=1)
+    overlay_image = alpha_mask * color_overlay + (1 - alpha_mask) * image
+    overlay_image = np.round(overlay_image).astype(np.uint8)
+    if filename is not None:
+        cv2.imwrite(filename, overlay_image)
+    return overlay_image
 
 
 def showimg(img, overlay_mask=None, close_on_click=False, cmap="gray", overlay_cmap="RdBu"):
