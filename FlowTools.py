@@ -23,9 +23,13 @@ def try_except_pass():
         pass
 
 
-def setup_logger(log_file_name=None):
-    logging.basicConfig(stream=sys.stdout, level=logging.DEBUG, format='%(asctime)s | %(levelname)5s | %(message)s')
-    logger = logging.getLogger()
+def setup_logger(log_file_name=None, name=None):
+    # logging.basicConfig(stream=sys.stdout, level=logging.DEBUG, format='%(asctime)s | %(levelname)5s | %(message)s')
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.DEBUG)
+    handler = logging.StreamHandler()
+    handler.setFormatter(logging.Formatter('%(asctime)s | %(levelname)5s | %(message)s'))
+    logger.addHandler(handler)
     if log_file_name is not None:
         handler = RotatingFileHandler(log_file_name, maxBytes=5 * 1024 * 1024, delay=True)
         logger.addHandler(handler)
