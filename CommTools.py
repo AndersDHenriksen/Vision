@@ -31,7 +31,7 @@ class EipComm:  # EthernetIP communication
             self.stop_monitor(tag)
 
     def monitor_tag(self, tag, python_class, interval_ms):
-        from QtTools import TagMonitor
+        from .QtTools import TagMonitor
         self.running_monitors[tag] = monitor = TagMonitor(tag, self, python_class, interval_ms)
         return monitor.change_signal
 
