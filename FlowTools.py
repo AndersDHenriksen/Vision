@@ -1,5 +1,8 @@
+import sys
 import time
 import traceback
+import logging
+from logging.handlers import RotatingFileHandler
 from contextlib import contextmanager
 
 
@@ -18,3 +21,13 @@ def try_except_pass():
         yield
     except:
         pass
+
+
+def setup_logger(log_file_name=None):
+    logging.basicConfig(stream=sys.stdout, level=logging.DEBUG, format='%(asctime)s | %(levelname)5s | %(message)s')
+    logger = logging.getLogger()
+    if log_file_name is not None:
+        handler = RotatingFileHandler(log_file_name, maxBytes=5 * 1024 * 1024, delay=True)
+        logger.addHandler(handler)
+        logger.handlers[-1].setFormatter(logger.handlers[0].formatter)
+    return logger
