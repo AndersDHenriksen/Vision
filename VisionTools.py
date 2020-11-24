@@ -97,7 +97,7 @@ def bw_reconstruct(marker, mask):
     return out_mask
 
 
-def bw_area_filter(mask, n=1, area_range=(0, np.inf), output='both'):
+def bw_area_filter(mask, n=1, area_range=(0, np.inf), output='mask'):
     """
     Filter objects from binary mask based on their size. Function can output both filtered mask and/or list of areas.
     :param mask: Binary mask to filter
@@ -113,8 +113,8 @@ def bw_area_filter(mask, n=1, area_range=(0, np.inf), output='both'):
     """
     assert mask.size, "Mask must have non-zero size"
 
-    cc_stack, labels = cc_masks(mask)
-    areas = np.bincount(labels[labels > 0])[1:]
+    areas_num, labels = cv2.connectedComponents(mask.astype(np.uint8))
+    areas = np.bincount(labels.ravel())[1:]
     inside_range_idx = np.flatnonzero((areas >= area_range[0]) & (areas <= area_range[1]))
     areas = areas[inside_range_idx]
     keep_idx = np.argsort(areas)[::-1][0:n]
@@ -125,7 +125,7 @@ def bw_area_filter(mask, n=1, area_range=(0, np.inf), output='both'):
         keep_areas = keep_areas[0]
     if output == 'area':
         return keep_areas
-    keep_mask = np.any(cc_stack[inside_range_idx[keep_idx], ...], 0)
+    keep_mask = np.isin(labels, inside_range_idx[keep_idx] + 1)
     if output == 'mask':
         return keep_mask
     return keep_mask, keep_areas
