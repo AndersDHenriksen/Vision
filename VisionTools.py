@@ -113,8 +113,8 @@ def bw_area_filter(mask, n=1, area_range=(0, np.inf), output='mask'):
     """
     assert mask.size, "Mask must have non-zero size"
 
-    areas_num, labels = cv2.connectedComponents(mask.astype(np.uint8))
-    areas = np.bincount(labels.ravel())[1:]
+    areas_num, labels, stats, centroids = cv2.connectedComponentsWithStats(mask.astype(np.uint8))
+    areas = stats[:, cv2.CC_STAT_AREA][1:]
     inside_range_idx = np.flatnonzero((areas >= area_range[0]) & (areas <= area_range[1]))
     areas = areas[inside_range_idx]
     keep_idx = np.argsort(areas)[::-1][0:n]
