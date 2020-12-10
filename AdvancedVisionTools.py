@@ -1,6 +1,8 @@
+from pathlib import Path
 import numpy as np
 import cv2
 import VisionTools as vt
+import FileTools as ft
 
 
 def grabcut_using_mask(image, gc_mask, iterations=5, modify_mask_in_place=False):
@@ -254,8 +256,11 @@ def fitline(x, y):
     """
     Equivalent to  numpy.polyfit, but using the faster cv2.fitLine backend
     :param x: 1D vector
+    :type x: np.core.multiarray.ndarray
     :param y: 1D vector
-    :return:  List of [slope, intercept]
+    :type y: np.core.multiarray.ndarray
+    :return:  Tuple of [slope, intercept]
+    :rtype: tuple
     """
     params = cv2.fitLine(np.vstack((x, y)).T, cv2.DIST_L2, 0, 0.01, 0.01)
 
@@ -271,4 +276,50 @@ def fitline(x, y):
     slope = (end_y - start_y) / (end_x - start_x)
     intercept = start_y - (start_x * slope)
 
-    return [slope, intercept]
+    return slope, intercept
+
+
+def save_video_clip(file_name, frame_list, frame_rate=20):
+    """
+    Take a list of images and convert them to a video clip. Example usage:
+    save_video_clip("time_lapse", list(Path(r"images").glob("*.png"))
+    :param file_name: Output video file name. cwd / file_name .mp4
+    :param file_name: str
+    :param frame_list: List of images. Can also be list of image paths
+    :param frame_list: Union[list, tuple, np.core.multiarray.ndarray]
+    :param frame_rate: Video fps
+    :param frame_rate: Union[int, float]
+    :return: None
+    :rtype: NoneType
+    """
+    # Misc frame list handling
+    if not len(frame_list):
+        print("Error empty framelist")
+        return
+    if isinstance(frame_list[0], str) or isinstance(frame_list[0], Path):
+        frame_list = [cv2.imread(str(fp)) for fp in frame_list]
+    if frame_list[0].ndim == 2:
+        frame_list = [cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR) for frame in frame_list]
+    frame_sizes = np.array([f.shape for f in frame_list])
+    if frame_sizes.ptp(axis=0).any():
+        print("Warning: Frames have different sizes will crop to same size")
+        min_size = frame_sizes.min(axis=0)
+        frame_list = [frame[:min_size[0], :min_size[1], :] for frame in frame_list]
+
+
+    ft.download_h264_codec()
+    codec = 'avc1'  # 'avc1'  # Alternative 'mp4v' 'xvid'
+    clip_path = Path.cwd() / f"{file_name}.mp4"
+    clip_path.parent.mkdir(exist_ok=True)
+
+    print(f"Saving clip: ", end='')
+    fourcc = cv2.VideoWriter_fourcc(*codec)
+    out = cv2.VideoWriter(str(clip_path), fourcc, frame_rate, frame_list[0].shape[:2][::-1])
+    for frame in frame_list:
+        if frame.ndim == 2:
+            frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
+        out.write(frame)
+
+    out.release()
+    print(clip_path, flush=True)
+
