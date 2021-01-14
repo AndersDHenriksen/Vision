@@ -275,6 +275,23 @@ def uv_coordinates(matrix, indexing='uv'):
     return np.meshgrid(np.arange(matrix.shape[1]), np.arange(matrix.shape[0]))
 
 
+def r_coordinates(matrix, unit_scale=False):
+    """
+    Get radius matrix with same size as input matrix.
+    :param matrix: Array whose shape will be used to determine radius matrix sizes.
+    :type matrix: np.core.multiarray.ndarray
+    :param unit_scale: Whether to scale the output so both axes go from -1 to 1
+    :type unit_scale: bool
+    :return: Radius matrix
+    :rtype: np.core.multiarray.ndarray
+    """
+    u, v = uv_coordinates(matrix)
+    u_c, v_c = u - (matrix.shape[1] - 1)/2, v - (matrix.shape[0] - 1)/2
+    if unit_scale:
+        u_c, v_c = 2 * u_c / (matrix.shape[1] - 1), 2 * v_c / (matrix.shape[0] - 1)
+    return np.sqrt(u_c ** 2 + v_c ** 2)
+
+
 def simple_rotate(image, angle, out='rot_image'):
     """
     Rotate image without cropping it. Rotation is clockwise. simple_rotate can output multitple intermediates so
