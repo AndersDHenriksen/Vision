@@ -1,8 +1,8 @@
 from pathlib import Path
 import numpy as np
 import cv2
-import VisionTools as vt
-import FileTools as ft
+from . import VisionTools as vt
+from . import FileTools as ft
 
 
 def grabcut_using_mask(image, gc_mask, iterations=5, modify_mask_in_place=False):
