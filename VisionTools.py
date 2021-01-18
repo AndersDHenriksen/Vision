@@ -187,7 +187,7 @@ def bw_remove_empty_lines(image):
 
 def bw_left_and_right_edge(bw_image):
     """
-    Find the left and right edge, i.e. left/right-most True pixels idx for each row.
+    Find the left and right edge, i.e. left/right-most True pixels idx for each row. Speedup by first calling bw_edge.
     :param bw_image: Binary mask to find left and right edge in
     :type bw_image: np.ndarray
     :return: (left_edge, right_edge) as np.arrays
