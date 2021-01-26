@@ -1,4 +1,6 @@
 import functools
+from pathlib import Path
+import cv2
 
 
 def try_except_pass(func):
@@ -34,3 +36,15 @@ def profile(func):
             prof.print_stats()
 
     return wrapper
+
+
+def path2image(enforce_grayscale=False):
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            # Do something before
+            if isinstance(args[0], str) or isinstance(args[0], Path):
+                args[0] = cv2.imread(str(args[0]), cv2.IMREAD_GRAYSCALE if enforce_grayscale else None)
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
