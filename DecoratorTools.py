@@ -44,7 +44,7 @@ def path2image(enforce_grayscale=False):
         def wrapper(*args, **kwargs):
             # Do something before
             if isinstance(args[0], str) or isinstance(args[0], Path):
-                args[0] = cv2.imread(str(args[0]), cv2.IMREAD_GRAYSCALE if enforce_grayscale else None)
-            return func(*args, **kwargs)
+                image = cv2.imread(str(args[0]), cv2.IMREAD_GRAYSCALE if enforce_grayscale else None)
+            return func(image, *args[1:], **kwargs)
         return wrapper
     return decorator
