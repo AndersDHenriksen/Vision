@@ -1,3 +1,4 @@
+import shutil
 from pathlib import Path
 import urllib.request
 import zipfile
@@ -90,3 +91,28 @@ def download_h264_codec():
     newfilepath = str(bz2_file)[:-4]  # assuming the filepath ends with .bz2
     open(newfilepath, 'wb').write(data)
     bz2_file.unlink()
+
+
+def rmtree(target):
+    """ Alias for shutil.rmtree. Note Path.rmdir can only delete empty. """
+    assert Path(target).is_dir()
+    shutil.rmtree(target)
+
+
+# Create monkey patches
+def _copy(self, target):
+    """ Monkey patch for shutil.copy. """
+    assert self.is_file()
+    shutil.copy(self, target)
+
+
+def _move_to_subfolder(self, subfolder_name):
+    """ Move file to subfolder. Subfolder will be created if non-existing. """
+    new_path = self.parent / subfolder_name / self.name
+    new_path.parent.mkdir(exist_ok=True)
+    return self.rename(new_path)
+
+
+# Apply monkey patches
+Path.copy = _copy
+Path.move_to_subfolder = _move_to_subfolder
