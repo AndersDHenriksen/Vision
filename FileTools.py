@@ -15,6 +15,14 @@ def count_files(parent_folder, file_string, recursive=False):
         return len(list(Path(parent_folder).glob(file_string)))
 
 
+def limit_n_files(parent_folder, file_string, n_files):
+    """
+    Limit the number of a specific files inside a folder. Files are deleted in ascending order until n_files are left.
+    """
+    file_paths = sorted(list(Path(parent_folder).glob(file_string)))
+    [fp.unlink() for fp in file_paths[:-n_files]]
+
+
 def download_url(url, output_path=None, do_unzip=True):
     """
     Download a file from an URL.
