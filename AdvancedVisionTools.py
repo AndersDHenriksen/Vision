@@ -252,14 +252,14 @@ def minimum_path(begin_pt, end_pt, cost_matrix, step_size=1):
     return path_u, path_v
 
 
-def fitline(x, y):
+def fit_line(x, y):
     """
     Equivalent to  numpy.polyfit, but using the faster cv2.fitLine backend
     :param x: 1D vector
     :type x: np.core.multiarray.ndarray
     :param y: 1D vector
     :type y: np.core.multiarray.ndarray
-    :return:  Tuple of [slope, intercept]
+    :return:  Tuple of (slope, intercept)
     :rtype: tuple
     """
     params = cv2.fitLine(np.vstack((x, y)).T, cv2.DIST_L2, 0, 0.01, 0.01)
@@ -277,6 +277,26 @@ def fitline(x, y):
     intercept = start_y - (start_x * slope)
 
     return slope, intercept
+
+
+def fit_circle(x, y):
+    """
+    Fit a circle to x, y points.
+    :param x: 1D vector of x-coordinates
+    :type x: np.core.multiarray.ndarray
+    :param y: 1D vector of y-coordinates
+    :type y: np.core.multiarray.ndarray
+    :return: Tuple of (x_c, y_c, r)
+    :rtype: tuple
+    """
+    x, y = x.reshape(-1, 1), y.reshape(-1, 1)
+    A = np.hstack((2 * x, 2 * y, np.ones_like(x)))
+    b = x ** 2 + y ** 2
+    c = np.linalg.lstsq(A, b, rcond=None)[0]
+    c = np.squeeze(c)
+    x_c, y_c = c[0], c[1]
+    r = np.sqrt(c[2] + c[0] ** 2 + c[1] ** 2)
+    return x_c, y_c, r
 
 
 def save_video_clip(file_name, frame_list, frame_rate=20):
