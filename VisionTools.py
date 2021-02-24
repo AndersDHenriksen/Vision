@@ -727,7 +727,7 @@ def add_overlay_to_image(image, mask, alpha=0.5, color="red", filename=None):
     return overlay_image
 
 
-def showimg(img, overlay_mask=None, close_on_click=False, cmap="gray", overlay_cmap="RdBu"):
+def showimg(img, overlay_mask=None, close_on_click=False, title=None, cmap="gray", overlay_cmap="RdBu"):
     """
     Plot an RGB or grayscale image using matplotlib.pyplot
 
@@ -764,6 +764,8 @@ def showimg(img, overlay_mask=None, close_on_click=False, cmap="gray", overlay_c
         if overlay_mask is not None:
             masked = np.ma.masked_where(overlay_mask == 0, overlay_mask)
             plt.imshow(masked, overlay_cmap, alpha=0.5)
+    if title:
+        plt.title(title)
 
     # Trim margins
     plt.tight_layout()  # plt.subplots_adjust(left=0.02, right=0.98, top=0.93, bottom=0.02)
