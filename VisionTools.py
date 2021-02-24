@@ -737,6 +737,8 @@ def showimg(img, overlay_mask=None, close_on_click=False, title=None, cmap="gray
     :type overlay_mask: np.core.multiarray.ndarray
     :param close_on_click: Whether to close figure on button press
     :type close_on_click: bool
+    :param title: Title string
+    :type title: str
     :param cmap: Colormap to use. Examples: gray, hot, hot_r, jet, jet_r, summer, rainbow, ...
     :type cmap: str
     :param overlay_cmap: Colormap for image. Examples: gray, hot, hot_r, jet, jet_r, summer, rainbow, ...
