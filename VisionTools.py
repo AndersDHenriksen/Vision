@@ -492,7 +492,7 @@ def diff_long(x, stepsize):
     return x[stepsize:] - x[:-stepsize]
 
 
-def find_clusters(a, allowed_jump=0, min_size=1):
+def find_clusters(a, allowed_jump=0, min_size=1, only_return_longest=False):
     """
     Find clusters, where the index has jumps/discontinuities, i.e. [1, 2, 3, 7, 8, 9] contains 2 clusters. Input can
     also be boolean array.
@@ -503,8 +503,10 @@ def find_clusters(a, allowed_jump=0, min_size=1):
     :type allowed_jump: int
     :param min_size: Minimum cluster size to keep
     :type min_size: int
-    :return: List of clusters as np.arrays
-    :rtype: list
+    :param only_return_longest: If true, will only return longest cluster
+    :type only_return_longest: bool
+    :return: List of clusters as np.arrays or longest cluster
+    :rtype: Union[list, np.core.multiarray.ndarray]
     """
 
     # Convert to index if bool
@@ -524,7 +526,8 @@ def find_clusters(a, allowed_jump=0, min_size=1):
             current_cluster_size += 1
     if current_cluster_size >= min_size:
         clusters.append(a[len(a) - current_cluster_size:])
-
+    if only_return_longest:
+        return sorted(clusters, key=len)[-1]
     return clusters
 
 
