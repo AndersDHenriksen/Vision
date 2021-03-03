@@ -660,7 +660,7 @@ def intr(a):
 def put_text(image, text, position_uv, font=cv2.FONT_HERSHEY_SIMPLEX, font_scale=1, color=(0, 0, 255), thickness=2):
     """ Wrapper for cv2.putText with more defaults. """
     if image.ndim == 2 and len(color) > 1:
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
     position_uv = tuple(intr(position_uv))
     return cv2.putText(image, text, position_uv, font, font_scale, color, thickness, cv2.LINE_AA)
 
