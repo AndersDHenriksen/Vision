@@ -110,8 +110,7 @@ def rmtree(target):
 # Create monkey patches
 def _copy(self, target):
     """ Monkey patch for shutil.copy. """
-    assert self.is_file()
-    shutil.copy(self, target)
+    return shutil.copy(self, target) if self.is_file() else shutil.copytree(self, target)
 
 
 def _move_to_subfolder(self, subfolder_name):
