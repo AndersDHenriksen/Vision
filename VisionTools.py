@@ -650,11 +650,17 @@ def intr(a):
     """
     Round and convert to integer. Especially useful for indexing.
     :param a: Array or float to round and cast
-    :type a: Union[float, np.core.multiarray.ndarray]
+    :type a: Union[float, list, tuple, np.core.multiarray.ndarray]
     :return: Rounded integer or array of ints
-    :rtype: Union[float, np.core.multiarray.ndarray]
+    :rtype: Union[float, list, tuple, np.core.multiarray.ndarray]
     """
-    return np.round(a).astype(np.int) if isinstance(a, np.ndarray) else int(round(a))
+    if isinstance(a, np.ndarray):
+        return np.round(a).astype(np.int)
+    if isinstance(a, list):
+        return [int(round(e)) for e in a]
+    if isinstance(a, tuple):
+        return tuple(int(round(e)) for e in a)
+    return int(round(a))
 
 
 def put_text(image, text, position_uv, font=cv2.FONT_HERSHEY_SIMPLEX, font_scale=1, color=(0, 0, 255), thickness=2):
