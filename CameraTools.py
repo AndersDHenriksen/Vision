@@ -33,8 +33,11 @@ class CameraWrapper:
 
     def live_view(self):
         import cv2
+        print("Starting liveview. Controls are:\nspace: pause\nq\esc: quit")
+        pause = False
         while True:
-            image = self.grab()
+            if not pause:
+                image = self.grab()
             if image.ndim == 3:
                 image = image[:, :, ::-1]
             image = cv2.resize(image, (1200, int(image.shape[0] / image.shape[1] * 1200)))
@@ -42,6 +45,8 @@ class CameraWrapper:
             key = cv2.waitKey(10)
             if key in [27, 113]:
                 break
+            if key == 32:
+                pause = not pause
 
 
 if __name__ == '__main__':
