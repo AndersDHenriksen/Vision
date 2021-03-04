@@ -30,3 +30,20 @@ class CameraWrapper:
     def stop(self):
         self.camera.StopGrabbing()
         self.camera.Close()
+
+    def live_view(self):
+        import cv2
+        while True:
+            image = self.grab()
+            if image.ndim == 3:
+                image = image[:, :, ::-1]
+            image = cv2.resize(image, (1200, int(image.shape[0] / image.shape[1] * 1200)))
+            cv2.imshow("Live View", image)
+            key = cv2.waitKey(10)
+            if key in [27, 113]:
+                break
+
+
+if __name__ == '__main__':
+    cam = CameraWrapper()
+    cam.live_view()
