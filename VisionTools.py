@@ -678,7 +678,7 @@ def confusion_matrix(y_label, y_predict, label_for_print=None):
     y_label, y_predict = np.array(y_label).astype(np.int), np.array(y_predict).astype(np.int)
     n_max = max(y_label.max(), y_predict.max()) + 1
     cm = np.zeros((n_max, n_max), dtype=np.int)
-    np.add.at(cm, [y_label, y_predict], 1)
+    np.add.at(cm, (y_label, y_predict), 1)
     if label_for_print is not None:
         n_label = max(len(l) for l in label_for_print)
         n_number = max(len(str(i)) for i in cm.ravel())
