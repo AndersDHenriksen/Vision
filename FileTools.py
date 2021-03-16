@@ -1,4 +1,5 @@
 import shutil
+from distutils.dir_util import copy_tree
 from pathlib import Path
 import urllib.request
 import zipfile
@@ -110,7 +111,7 @@ def rmtree(target):
 # Create monkey patches
 def _copy(self, target):
     """ Monkey patch for shutil.copy. """
-    return shutil.copy(self, target) if self.is_file() else shutil.copytree(self, target)
+    return shutil.copy(self, target) if self.is_file() else copy_tree(str(self), str(target))
 
 
 def _move_to_subfolder(self, subfolder_name):

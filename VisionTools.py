@@ -663,6 +663,38 @@ def intr(a):
     return int(round(a))
 
 
+def confusion_matrix(y_label, y_predict, label_for_print=None):
+    """
+    Calculate and maybe plot confusion matrix. y_label and y_predict are assumed to increasing integers.
+    :param y_label: True/Annotated labels
+    :type y_label: np.core.multiarray.ndarray
+    :param y_predict: Predicted/inferred labels
+    :type y_predict: np.core.multiarray.ndarray
+    :param label_for_print: Label array. If this variable is not none, the confusion matrix will be printed.
+    :type label_for_print: list
+    :return: Confusion matrix as nparray
+    :rtype: np.core.multiarray.ndarray
+    """
+    y_label, y_predict = np.array(y_label), np.array(y_predict)
+    n_max = max(y_label.max(), y_predict.max()) + 1
+    cm = np.zeros((n_max, n_max), dtype=np.int)
+    np.add.at(cm, [y_label, y_predict], 1)
+    if label_for_print is not None:
+        n_label = max(len(l) for l in label_for_print)
+        n_number = max(len(str(i)) for i in cm.ravel())
+        for label, row in zip(label_for_print, cm):
+            print(f'{label:{n_label}} | ', end='')
+            for i in row:
+                print(f'{i:{n_number}} | ', end='')
+            print('')
+        print('')
+        error = y_label != y_predict
+        for i, label in enumerate(label_for_print):
+            print(f"{label:{n_label}}: {np.sum(error[y_label==i])} / {np.sum(y_label==i)} | errors: {find(error & (y_label==i))}")
+
+    return cm
+
+
 def put_text(image, text, position_uv, font=cv2.FONT_HERSHEY_SIMPLEX, font_scale=1, color=(0, 0, 255), thickness=2):
     """ Wrapper for cv2.putText with more defaults. """
     if image.ndim == 2 and len(color) > 1:
@@ -783,3 +815,7 @@ def showimg(img, overlay_mask=None, close_on_click=False, title=None, cmap="gray
     else:
         plt.show()
     return fig
+
+
+if __name__ == "__main__":
+    pass
