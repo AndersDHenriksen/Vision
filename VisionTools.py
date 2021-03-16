@@ -689,6 +689,7 @@ def confusion_matrix(y_label, y_predict, label_for_print=None):
             print('')
         print('')
         error = y_label != y_predict
+        print(f'Error-rate: {np.sum(error)} / {error.size}')
         for i, label in enumerate(label_for_print):
             print(f"{label:{n_label}}: {np.sum(error[y_label==i])} / {np.sum(y_label==i)} | errors: {find(error & (y_label==i))}")
 
