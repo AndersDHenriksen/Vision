@@ -111,6 +111,7 @@ def rmtree(target):
 # Create monkey patches
 def _copy(self, target):
     """ Monkey patch for shutil.copy. """
+    Path(target).parent.mkdir(exist_ok=True)
     return shutil.copy(self, target) if self.is_file() else copy_tree(str(self), str(target))
 
 
