@@ -527,7 +527,7 @@ def find_clusters(a, allowed_jump=0, min_size=1, only_return_longest=False):
     if current_cluster_size >= min_size:
         clusters.append(a[len(a) - current_cluster_size:])
     if only_return_longest:
-        return sorted(clusters, key=len)[-1]
+        return sorted(clusters, key=len)[-1] if len(clusters) else []
     return clusters
 
 
