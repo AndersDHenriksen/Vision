@@ -3,12 +3,14 @@ from pypylon import pylon
 
 class CameraWrapper:
 
-    def __init__(self, exposure_time_us=3000, grab_strategy='latest'):
+    def __init__(self, exposure_time_us=3000, grab_strategy='latest', enable_jumbo_frame=True):
         assert grab_strategy in ['latest', 'upcoming']
         self.camera = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateFirstDevice())
         self.camera.Open()
         self._grab_strategy = grab_strategy
         if self.camera.IsGigE():
+            if enable_jumbo_frame:
+                self.camera.GevSCPSPacketSize.SetValue(8192)
             self.camera.ExposureTimeAbs = exposure_time_us
         else:
             self.camera.ExposureTime = exposure_time_us
