@@ -30,18 +30,12 @@ class CameraWrapper:
 
     def grab(self):
         if not self.camera.IsGrabbing():
-            self.camera.StartGrabbing()
+            self.camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly)
         if self.software_trigger:
             self.camera.ExecuteSoftwareTrigger()
-        grabResult = self.camera.RetrieveResult(5000, pylon.TimeoutHandling_ThrowException)
-        while not grabResult.GrabSucceeded():
-            if self.software_trigger:
-                self.camera.ExecuteSoftwareTrigger()
-            grabResult = self.camera.RetrieveResult(5000, pylon.TimeoutHandling_ThrowException)
-            grabResult.Release()
-        image = grabResult.GetArray()
-        grabResult.Release()
-        return image
+        with self.camera.RetrieveResult(1000) as grabResult:
+            image = grabResult.Array if grabResult.GrabSucceeded() else None
+        return image if image is not None else self.grab()  # Retry if grab failed
 
     def grab_single(self):
         return self.camera.GrabOne(1000).Array
