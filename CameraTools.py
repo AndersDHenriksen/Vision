@@ -3,25 +3,42 @@ from pypylon import pylon
 
 class CameraWrapper:
 
-    def __init__(self, exposure_time_us=3000, grab_strategy='latest', enable_jumbo_frame=True):
-        assert grab_strategy in ['latest', 'upcoming']
+    def __init__(self, exposure_time_us=3000, setup_for_streaming=False, enable_jumbo_frame=True):
+        self.software_trigger = None
         self.camera = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateFirstDevice())
         self.camera.Open()
-        self._grab_strategy = grab_strategy
-        if self.camera.IsGigE():
-            if enable_jumbo_frame:
-                self.camera.GevSCPSPacketSize.SetValue(8192)
+        if enable_jumbo_frame and self.camera.IsGigE():
+            self.camera.GevSCPSPacketSize.SetValue(8192)
+        try:
             self.camera.ExposureTimeAbs = exposure_time_us
-        else:
+        except:
             self.camera.ExposureTime = exposure_time_us
+        if setup_for_streaming:
+            self.setup_for_streaming()
+        else:
+            self.setup_for_trigger()
+
+    def setup_for_trigger(self):
+        self.camera.TriggerSelector = "FrameStart"
+        self.camera.TriggerMode = "On"
+        self.camera.TriggerSource = "Software"
+        self.software_trigger = True
+
+    def setup_for_streaming(self):
+        self.camera.TriggerMode = "Off"
+        self.software_trigger = False
 
     def grab(self):
         if not self.camera.IsGrabbing():
-            self.camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly if self._grab_strategy == 'latest' else
-                                      pylon.GrabStrategy_UpcomingImage)
+            self.camera.StartGrabbing()
+        if self.software_trigger:
+            self.camera.ExecuteSoftwareTrigger()
         grabResult = self.camera.RetrieveResult(5000, pylon.TimeoutHandling_ThrowException)
         while not grabResult.GrabSucceeded():
+            if self.software_trigger:
+                self.camera.ExecuteSoftwareTrigger()
             grabResult = self.camera.RetrieveResult(5000, pylon.TimeoutHandling_ThrowException)
+            grabResult.Release()
         image = grabResult.GetArray()
         grabResult.Release()
         return image
