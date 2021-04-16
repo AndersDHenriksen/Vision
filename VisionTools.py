@@ -58,6 +58,22 @@ def morph(kind, image, strel_shape, strel_kind='rect'):
     return out
 
 
+def bw_distance_transform(mask, measure_white_region=True):
+    """
+    Wrapper for cv2.distanceTransform.
+    :param mask: Input mask. Will be converted to uint8
+    :type mask: np.core.multiarray.ndarray
+    :param measure_white_region: Whether to measure white or black regions
+    :type measure_white_region: bool
+    :return: Distance image
+    :rtype: np.core.multiarray.ndarray
+    """
+    if not measure_white_region:
+        mask = ~mask
+    out = cv2.distanceTransform(mask.astype(np.uint8), cv2.DIST_L2, 3)
+    return out
+
+
 def bw_edge(mask, include_at_border=False):
     """
     Find edges in binary mask. Edge pixels at the mask borders can optionally be included.
@@ -276,13 +292,15 @@ def uv_coordinates(matrix, indexing='uv'):
     return np.meshgrid(np.arange(matrix.shape[1]), np.arange(matrix.shape[0]))
 
 
-def r_coordinates(matrix, unit_scale=False):
+def r_coordinates(matrix, unit_scale=False, also_return_angle=False):
     """
     Get radius matrix with same size as input matrix.
     :param matrix: Array whose shape will be used to determine radius matrix sizes.
     :type matrix: np.core.multiarray.ndarray
     :param unit_scale: Whether to scale the output so both axes go from -1 to 1
     :type unit_scale: bool
+    :param also_return_angle: Whether to also return angle matrix. Aligned with uv coordinate system.
+    :type also_return_angle: bool
     :return: Radius matrix
     :rtype: np.core.multiarray.ndarray
     """
@@ -290,6 +308,8 @@ def r_coordinates(matrix, unit_scale=False):
     u_c, v_c = u - (matrix.shape[1] - 1)/2, v - (matrix.shape[0] - 1)/2
     if unit_scale:
         u_c, v_c = 2 * u_c / (matrix.shape[1] - 1), 2 * v_c / (matrix.shape[0] - 1)
+    if also_return_angle:
+        return np.sqrt(u_c ** 2 + v_c ** 2), np.arctan2(v_c, u_c)
     return np.sqrt(u_c ** 2 + v_c ** 2)
 
 
