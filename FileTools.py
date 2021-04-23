@@ -4,7 +4,7 @@ from pathlib import Path
 import urllib.request
 import zipfile
 import tarfile
-
+import cv2
 
 def count_files(parent_folder, file_string, recursive=False):
     """
@@ -106,6 +106,27 @@ def rmtree(target):
     """ Alias for shutil.rmtree. Note Path.rmdir can only delete empty. """
     assert Path(target).is_dir()
     shutil.rmtree(target)
+
+
+def sort_image_files(img_dir, pattern="*.png"):
+    subfolders = [f.name for f in sorted(Path(img_dir).glob("*")) if f.is_dir()]
+    subfolders_dict = {i + 49: f for i, f in enumerate(subfolders)}
+    if len(subfolders) == 0:
+        print(f"No subfolders in  {img_dir}, cannot move files.")
+        return
+    print("Inputs:\nq/esc: quit")
+    [print(f"{i+1}: {name}") for i, name in enumerate(subfolders)]
+    for image_path in Path(img_dir).glob(pattern):
+        print(image_path)
+        image = cv2.imread(str(image_path))
+        dim = (1200, int(1200 * image.shape[0] / image.shape[1]))
+        image_resized = cv2.resize(image, dim)
+        cv2.imshow("folder image", image_resized)
+        key = cv2.waitKey()
+        if key == 27 or key == 113:
+            return
+        if key in subfolders_dict.keys():
+            image_path.move_to_subfolder(subfolders_dict[key])
 
 
 # Create monkey patches
