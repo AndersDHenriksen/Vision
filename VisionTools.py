@@ -704,6 +704,19 @@ def distance_point_to_line(line_pt1, line_pt2, pt):
     return dist
 
 
+def distance_to_fit(y):
+    """
+    Calcualte distance to best line fit.
+    :param y: y-values to fit
+    :type y: np.core.multiarray.ndarray
+    :return: distance to fitted line
+    :rtype: np.core.multiarray.ndarray
+    """
+    from AdvancedVisionTools import fit_line
+    x = np.arange(y.size)
+    return y - np.polyval(fit_line(x, y), x)
+
+
 def intr(a):
     """
     Round and convert to integer. Especially useful for indexing.
