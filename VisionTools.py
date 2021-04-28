@@ -96,7 +96,7 @@ def bw_edge(mask, include_at_border=False):
 def sort_edge(mask_edge, start_point_ij=None):
     """
     Get an array of edge points. The array is ordered so mask-neighbour points are array-neighbours.
-    The input mask edge should be an edge of a single cc like the output from vt.bw_edge(vt.bw_area_filter(mask)).
+    The input mask edge should a single closed cc like the output from vt.bw_edge(vt.bw_area_filter(mask), True).
     :param mask_edge: Mask edge to sort into array
     :type mask: np.core.multiarray.ndarray
     :param start_point_ij: An optional starting point for the array
