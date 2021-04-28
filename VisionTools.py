@@ -565,7 +565,7 @@ def find_clusters(a, allowed_jump=0, min_size=1, only_return_longest=False):
     """
 
     # Convert to index if bool
-    if a.dtype == np.bool:
+    if a.dtype == bool:
         a = np.flatnonzero(a)
 
     # Walk through array and find clusters
@@ -579,7 +579,7 @@ def find_clusters(a, allowed_jump=0, min_size=1, only_return_longest=False):
             current_cluster_size = 1
         else:
             current_cluster_size += 1
-    if current_cluster_size >= min_size:
+    if current_cluster_size >= min_size and len(a):
         clusters.append(a[len(a) - current_cluster_size:])
     if only_return_longest and len(clusters):
         return sorted(clusters, key=len)[-1]
@@ -887,4 +887,7 @@ def showimg(img, overlay_mask=None, close_on_click=False, title=None, cmap="gray
 
 
 if __name__ == "__main__":
+    print(find_clusters(np.array([0, 0, 0, 0, 0, 0, 0, 0, 0]) > 0, min_size=1))
+    print(find_clusters(np.array([0, 0, 0, 0, 0, 0, 0, 0, 1]) > 0, min_size=2))
+    print(find_clusters(np.array([0, 0, 0, 0, 0, 0, 0, 0, 0]) > 0, min_size=1))
     pass

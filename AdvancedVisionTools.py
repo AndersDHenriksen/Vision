@@ -310,6 +310,11 @@ def fit_circle(x, y):
     return x_c, y_c, r
 
 
+def save_video_from_folder(folder_name, pattern="*.png", frame_rate=20):
+    """ Wrapper for save_video_clip that takes all images in a folder """
+    save_video_clip("images", sorted(Path(folder_name).glob(pattern)), frame_rate)
+
+
 def save_video_clip(file_name, frame_list, frame_rate=20):
     """
     Take a list of images and convert them to a video clip. Example usage:
