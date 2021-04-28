@@ -93,7 +93,7 @@ def bw_edge(mask, include_at_border=False):
     return edge_mask.astype(np.bool)
 
 
-def sort_edge(mask):
+def bw_edge_sorted(mask):
     """
     Get an array of edge points. The array is ordered so mask-neighbour points are array-neighbours.
     :param mask: Mask in which the largest edge will be sorted into array
