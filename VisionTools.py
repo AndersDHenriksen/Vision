@@ -712,7 +712,7 @@ def distance_to_fit(y):
     :return: distance to fitted line
     :rtype: np.core.multiarray.ndarray
     """
-    from AdvancedVisionTools import fit_line
+    from .AdvancedVisionTools import fit_line
     x = np.arange(y.size)
     return y - np.polyval(fit_line(x, y), x)
 
