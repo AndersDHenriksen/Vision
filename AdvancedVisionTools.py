@@ -126,6 +126,7 @@ def draw_text_on_image(image, text, uv=(20, 50), font_face=cv2.FONT_HERSHEY_PLAI
                        thickness=3, line_type=cv2.LINE_AA, inplace=False):
     image_out = image if inplace else image.copy()
     pt_int = tuple(np.round(uv).astype(np.int32))
+    color = tuple(int(i) for i in color)
     cv2.putText(image_out, text, pt_int, font_face, font_scale, color, thickness=thickness, lineType=line_type)
     return image_out
 
