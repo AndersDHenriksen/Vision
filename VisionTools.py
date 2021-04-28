@@ -93,6 +93,44 @@ def bw_edge(mask, include_at_border=False):
     return edge_mask.astype(np.bool)
 
 
+def sort_edge(mask_edge, start_point_ij=None):
+    """
+    Get an array of edge points. The array is ordered so mask-neighbour points are array-neighbours.
+    The input mask edge should be an edge of a single cc like the output from vt.bw_edge(vt.bw_area_filter(mask)).
+    :param mask_edge: Mask edge to sort into array
+    :type mask: np.core.multiarray.ndarray
+    :param start_point_ij: An optional starting point for the array
+    :type start_point_ij: Union[None, list, np.core.multiarray.ndarray]
+    :return: Sorted edge points
+    :rtype: np.core.multiarray.ndarray
+    """
+    mask_edge = mask_edge.copy()
+    if start_point_ij is None:
+        edge_points = [np.argwhere(mask_edge)[0]]
+    else:
+        edge_points = [np.array(start_point_ij)]
+    end_point = None
+    n_points = mask_edge.sum()
+    while True:
+        ep = edge_points[-1]
+        mask_edge[ep[0], ep[1]] = False
+        edge_crop = mask_edge[ep[0] - 1: ep[0] + 2, ep[1] - 1: ep[1] + 2]
+        neighbour_points = np.argwhere(edge_crop)
+        if end_point is None:
+            if neighbour_points.size > 2:
+                end_point = ep + neighbour_points[-1] - 1
+        elif ep[0] == end_point[0] and ep[1] == end_point[1]:
+            if len(edge_points) > n_points / 2:
+                break
+            edge_points.clear()
+            end_point = None
+        if neighbour_points.size:
+            edge_points.append(ep + neighbour_points[0] - 1)
+        else:
+            edge_points.pop()
+    return np.array(edge_points)
+
+
 def bw_reconstruct(marker, mask):
     """
     Performs morphological reconstruction of the image marker under the image mask. Inspired by MATLABs bwreconstruct.
