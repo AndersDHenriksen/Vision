@@ -110,6 +110,7 @@ def draw_circle_on_image(image, center_uv, radius, color=(255, 0, 0), thickness=
     image_out = image if inplace else image.copy()
     center_uv_int = tuple(np.round(center_uv).astype(np.int32))
     radius_int = np.round(radius).astype(np.int32)
+    color = tuple(int(i) for i in color)
     cv2.circle(image_out, center_uv_int, radius_int, color=color, thickness=thickness, lineType=line_type)
     return image_out
 
@@ -118,11 +119,12 @@ def draw_line_segment_on_image(image, uv1, uv2, color=(255, 0, 0), thickness=1, 
     image_out = image if inplace else image.copy()
     pt1_int = tuple(np.round(uv1).astype(np.int32))
     pt2_int = tuple(np.round(uv2).astype(np.int32))
+    color = tuple(int(i) for i in color)
     cv2.line(image_out, pt1_int, pt2_int, color=color, thickness=thickness, lineType=line_type)
     return image_out
 
 
-def draw_text_on_image(image, text, uv=(20, 50), font_face=cv2.FONT_HERSHEY_PLAIN, font_scale=3.0, color=(0, 255, 0),
+def draw_text_on_image(image, text, uv=(20, 50), font_face=cv2.FONT_HERSHEY_PLAIN, font_scale=3.0, color=(255, 0, 0),
                        thickness=3, line_type=cv2.LINE_AA, inplace=False):
     image_out = image if inplace else image.copy()
     pt_int = tuple(np.round(uv).astype(np.int32))
