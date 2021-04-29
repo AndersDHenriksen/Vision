@@ -1,3 +1,5 @@
+import time
+from pathlib import Path
 from pypylon import pylon
 
 
@@ -44,22 +46,26 @@ class CameraWrapper:
         self.camera.StopGrabbing()
         self.camera.Close()
 
-    def live_view(self):
+    def live_view(self, save_folder=Path.cwd()):
         import cv2
-        print("Starting liveview. Controls are:\nspace: pause\nq\esc: quit")
+        print("Starting liveview. Controls are:\nspace: pause\nenter: save\nq\esc: quit")
         pause = False
         while True:
             if not pause:
                 image = self.grab()
             if image.ndim == 3:
                 image = image[:, :, ::-1]
-            image = cv2.resize(image, (1200, int(image.shape[0] / image.shape[1] * 1200)))
-            cv2.imshow("Live View", image)
+            image_resized = cv2.resize(image, (1200, int(image.shape[0] / image.shape[1] * 1200)))
+            cv2.imshow("Live View", image_resized)
             key = cv2.waitKey(10)
-            if key in [27, 113]:
+            if key in [ord('\x1b'), ord('q')]:
                 break
-            if key == 32:
+            if key == ord(' '):
                 pause = not pause
+            if key == ord('\n'):
+                filename = time.strftime(f"%Y-%m-%d %H-%M-%S", time.localtime()) + ".png"
+                print(f"Saving image to {str(Path(save_folder) / filename)}")
+                cv2.imwrite(str(Path(save_folder) / filename), image)
 
 
 if __name__ == '__main__':
