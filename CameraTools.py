@@ -5,16 +5,17 @@ from pypylon import pylon
 
 class CameraWrapper:
 
-    def __init__(self, exposure_time_us=3000, setup_for_streaming=False, enable_jumbo_frame=True):
+    def __init__(self, exposure_time_us=None, setup_for_streaming=False, enable_jumbo_frame=True):
         self.software_trigger = None
         self.camera = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateFirstDevice())
         self.camera.Open()
         if enable_jumbo_frame and self.camera.IsGigE():
             self.camera.GevSCPSPacketSize.SetValue(8192)
-        try:
-            self.camera.ExposureTimeAbs = exposure_time_us
-        except:
-            self.camera.ExposureTime = exposure_time_us
+        if exposure_time_us is not None:
+            try:
+                self.camera.ExposureTimeAbs = exposure_time_us
+            except:
+                self.camera.ExposureTime = exposure_time_us
         if setup_for_streaming:
             self.setup_for_streaming()
         else:
@@ -62,7 +63,7 @@ class CameraWrapper:
                 break
             if key == ord(' '):
                 pause = not pause
-            if key == ord('\n'):
+            if key == ord('\r'):
                 filename = time.strftime(f"%Y-%m-%d %H-%M-%S", time.localtime()) + ".png"
                 print(f"Saving image to {str(Path(save_folder) / filename)}")
                 cv2.imwrite(str(Path(save_folder) / filename), image)
