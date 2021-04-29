@@ -887,7 +887,4 @@ def showimg(img, overlay_mask=None, close_on_click=False, title=None, cmap="gray
 
 
 if __name__ == "__main__":
-    print(find_clusters(np.array([0, 0, 0, 0, 0, 0, 0, 0, 0]) > 0, min_size=1))
-    print(find_clusters(np.array([0, 0, 0, 0, 0, 0, 0, 0, 1]) > 0, min_size=2))
-    print(find_clusters(np.array([0, 0, 0, 0, 0, 0, 0, 0, 0]) > 0, min_size=1))
     pass
