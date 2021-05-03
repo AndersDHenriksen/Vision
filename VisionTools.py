@@ -466,13 +466,13 @@ def resize(image, width=None, height=None, inter=cv2.INTER_AREA):
     if width is None:
         # calculate the ratio of the height and construct the dimensions
         r = height / float(h)
-        dim = (int(w * r), height)
+        dim = (int(w * r), int(height))
 
     # otherwise, the height is None
     else:
         # calculate the ratio of the width and construct the dimensions
         r = width / float(w)
-        dim = (width, int(h * r))
+        dim = (int(width), int(h * r))
 
     # resize the image
     resized = cv2.resize(image, dim, interpolation=inter)
