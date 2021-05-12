@@ -41,6 +41,27 @@ def profile(func):
     return wrapper
 
 
+def log_stdout(func):
+    @functools.wraps(func)
+    def wrapper_decorator(*args, **kwargs):
+        cache = []
+        wrapper_decorator.do_write = True
+        original_write = sys.stdout.write
+
+        def write(text):
+            cache.append(text)
+            original_write(text)
+
+        sys.stdout.write = write
+        value = func(*args, **kwargs)  # original call
+        sys.stdout.write = original_write
+        if wrapper_decorator.do_write:
+            with open('console.log', 'w') as f:
+                f.writelines(cache)
+        return value
+    return wrapper_decorator
+
+
 def md5(input_string):
     return hashlib.md5(str(input_string).encode('utf8')).hexdigest()
 

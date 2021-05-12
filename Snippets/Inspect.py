@@ -1,7 +1,7 @@
 from pathlib import Path
 import numpy as np
 import Vision.VisionTools as vt
-from Vision.DecoratorTools import path2image
+from Vision.DecoratorTools import path2image, log_stdout
 
 
 @path2image(load_from_shared_memory=False, enforce_grayscale=True)
@@ -19,6 +19,7 @@ def data_result_generator():
         yield g + len(rejects), 0, image_path
 
 
+@log_stdout
 def test_inspection(idx=None):
     annotations = []
     results = []
@@ -32,6 +33,8 @@ def test_inspection(idx=None):
     errors = annotations != results
     print(f"Reject Errors (FN): {np.sum(errors & (annotations==1))} / {np.sum(annotations==1)} | errors: {vt.find(errors & (annotations==1))}")
     print(f"Accept Errors (FP): {np.sum(errors & (annotations==0))} / {np.sum(annotations==0)} | errors: {vt.find(errors & (annotations==0))}")
+    if idx is not None:
+        test_inspection.do_write = False
 
 
 if __name__ == "__main__":
