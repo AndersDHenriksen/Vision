@@ -5,7 +5,7 @@ from pypylon import pylon
 
 class CameraWrapper:
 
-    def __init__(self, exposure_time_us=None, setup_for_streaming=False, enable_jumbo_frame=True):
+    def __init__(self, exposure_time_us=None, setup_for_streaming=False, enable_jumbo_frame=False):
         self.software_trigger = None
         self.camera = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateFirstDevice())
         self.camera.Open()
@@ -20,6 +20,10 @@ class CameraWrapper:
             self.setup_for_streaming()
         else:
             self.setup_for_trigger()
+        self.converter = None
+        if self.camera.PixelFormat.Value == 'BayerRG8':
+            self.converter = pylon.ImageFormatConverter()
+            self.converter.OutputPixelFormat = pylon.PixelType_RGB8packed
 
     def setup_for_trigger(self):
         self.camera.TriggerSelector = "FrameStart"
@@ -36,8 +40,13 @@ class CameraWrapper:
             self.camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly)
         if self.software_trigger:
             self.camera.ExecuteSoftwareTrigger()
+        image = None
         with self.camera.RetrieveResult(1000) as grabResult:
-            image = grabResult.Array if grabResult.GrabSucceeded() else None
+            if grabResult.GrabSucceeded():
+                if self.converter is not None:
+                    image = self.converter.Convert(grabResult).Array
+                else:
+                    image = grabResult.Array
         return image if image is not None else self.grab()  # Retry if grab failed
 
     def grab_single(self):
