@@ -11,6 +11,8 @@ class CameraWrapper:
         self.camera.Open()
         if enable_jumbo_frame and self.camera.IsGigE():
             self.camera.GevSCPSPacketSize.SetValue(8192)
+            # self.camera.GevSCPD.SetValue(1000)
+            # self.camera.GevSCFTD.SetValue(1000)
         if exposure_time_us is not None:
             try:
                 self.camera.ExposureTimeAbs = exposure_time_us
