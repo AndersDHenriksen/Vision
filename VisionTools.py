@@ -714,6 +714,11 @@ def distance_to_fit(y):
     return y - np.polyval(fit_line(x, y), x)
 
 
+def unit_vector(vector):
+    """ Returns the unit vector of the vector. """
+    return np.array(vector) / np.linalg.norm(vector)
+
+
 def intr(a):
     """
     Round and convert to integer. Especially useful for indexing.
