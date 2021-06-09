@@ -30,7 +30,7 @@ def setup_logger(log_file_name=None, name=None):
     handler.setFormatter(logging.Formatter('%(asctime)s | %(levelname)5s | %(message)s'))
     logger.addHandler(handler)
     if log_file_name is not None:
-        handler = RotatingFileHandler(log_file_name, maxBytes=5 * 1024 * 1024, delay=True)
+        handler = RotatingFileHandler(log_file_name, maxBytes=5 * 1024 * 1024, backupCount=1, delay=True)
         logger.addHandler(handler)
         logger.handlers[-1].setFormatter(logger.handlers[0].formatter)
     return logger
