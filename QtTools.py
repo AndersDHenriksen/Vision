@@ -74,7 +74,7 @@ class SetupLogger(qtc.QObject):
         # Set up log handler
         handlers = []
         if log_file_name is not None:
-            handlers.append(RotatingFileHandler(log_file_name, maxBytes=5 * 1024 * 1024, delay=True))
+            handlers.append(RotatingFileHandler(log_file_name, maxBytes=5 * 1024 * 1024, backupCount=1))
         if log_q_text_edit is not None:
             handlers.append(self._text_field_stream)
         for handler in handlers:
