@@ -129,6 +129,18 @@ def sort_image_files(img_dir, pattern="*.png"):
             image_path.move_to_subfolder(subfolders_dict[key])
 
 
+def convert_images_in_folders(img_dir, pattern="*.bmp", output_extension="jpg"):
+    for img_path in sorted(Path(img_dir).rglob(pattern)):
+        img = cv2.imread(str(img_path))
+        if img.ptp(axis=2).max() == 0:
+            img = img[:, :, 0]
+        success = cv2.imwrite(str(img_path.parent / f"{img_path.stem}.{output_extension}"), img)
+        if not success:
+            raise Exception(f"Could not convert {img_path}")
+        print(f"Converted: {img_path}")
+        img_path.unlink()
+
+
 # Create monkey patches
 def _copy(self, target):
     """ Monkey patch for shutil.copy. """
