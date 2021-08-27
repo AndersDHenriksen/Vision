@@ -68,7 +68,8 @@ def md5(input_string):
 
 def path2image(enforce_grayscale=False, load_from_shared_memory=False):
     from multiprocessing import shared_memory
-    from PIL import Image
+    if load_from_shared_memory:
+        from PIL import Image
 
     def decorator(func):
         @functools.wraps(func)
