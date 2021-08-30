@@ -69,6 +69,7 @@ class SetupLogger(qtc.QObject):
         logging.basicConfig(stream=sys.stdout, level=logging.DEBUG, format='%(asctime)s | %(levelname)5s | %(message)s')
         self.logger = logging.getLogger()
         self.log_out = log_q_text_edit
+        self.log_out.setFont(qtg.QFontDatabase.systemFont(qtg.QFontDatabase.FixedFont))
         self._text_field_stream = TextFieldStream()
 
         # Set up log handler
@@ -86,6 +87,7 @@ class SetupLogger(qtc.QObject):
     @qtc.pyqtSlot(str)
     def log_append_text(self, msg):
         self.log_out.setText(self.log_out.toPlainText() + msg + "\n")
+        self.log_out.moveCursor(qtg.QTextCursor.End)
 
 
 class TextFieldStream(qtc.QObject, logging.Handler):
