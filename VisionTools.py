@@ -356,7 +356,8 @@ def simple_rotate(image, angle, out='rot_image'):
     :type image: np.core.multiarray.ndarray
     :param angle: Angle to rotate
     :type angle: float
-    :param out: List (of strings) or string of what to output. Possibilities are:  rot_matrix, rot_function, rot_image
+    :param out: List (of strings) or string of what to output. Possibilities are:
+                rot_matrix, invert_matrix, rot_function, rot_image.
     :type out: Union[list, str]
     :return: Rotated image, roated matrix or rotate function based on "out"
     :rtype: Union[np.core.multiarray.ndarray, list, function]
@@ -369,10 +370,6 @@ def simple_rotate(image, angle, out='rot_image'):
     # grab the rotation matrix (applying the negative of the angle to rotate clockwise), then grab the sine and cosine
     # (i.e., the rotation components of the matrix)
     rotate_matrix = cv2.getRotationMatrix2D((cX, cY), -angle, 1.0)
-    if 'rot_matrix' in out:
-        output.append(rotate_matrix)
-        if len(output) == len(out):
-            return rotate_matrix
     cos = np.abs(rotate_matrix[0, 0])
     sin = np.abs(rotate_matrix[0, 1])
     # compute the new bounding dimensions of the image
@@ -381,17 +378,16 @@ def simple_rotate(image, angle, out='rot_image'):
     # adjust the rotation matrix to take into account translation
     rotate_matrix[0, 2] += (nW / 2) - cX
     rotate_matrix[1, 2] += (nH / 2) - cY
-    # define rotation function, rotate and return
+    if 'rot_matrix' in out:
+        output.append(rotate_matrix)
+    if 'invert_matrix' in out:
+        output.append(cv2.invertAffineTransform(rotate_matrix))
     rotate_function = lambda img: cv2.warpAffine(img.astype(np.uint8), rotate_matrix, (nW, nH)).astype(img.dtype)
     if 'rot_function' in out:
         output.append(rotate_function)
-        if len(output) == len(out):
-            return output if len(out) > 1 else rotate_function
-    rot_img = rotate_function(image)
     if 'rot_image' in out:
-        output.append(rot_img)
-        return output if len(out) > 1 else rot_img
-    return output
+        output.append(rotate_function(image))
+    return output if len(output) > 1 else output[0]
 
 
 def image_crop(image, point, sides, is_point_center=False, indexing='ij', assign=None):
