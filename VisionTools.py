@@ -342,8 +342,7 @@ def r_coordinates(matrix, unit_scale=False, also_return_angle=False):
     :return: Radius matrix
     :rtype: np.core.multiarray.ndarray
     """
-    u, v = uv_coordinates(matrix)
-    u_c, v_c = u - (matrix.shape[1] - 1)/2, v - (matrix.shape[0] - 1)/2
+    u_c, v_c = uv_coordinates(matrix, center_origin=True)
     if unit_scale:
         u_c, v_c = 2 * u_c / (matrix.shape[1] - 1), 2 * v_c / (matrix.shape[0] - 1)
     if also_return_angle:
