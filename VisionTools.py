@@ -312,19 +312,22 @@ def uv_centroid(bw_image):
     return uv
 
 
-def uv_coordinates(matrix, indexing='uv'):
+def uv_coordinates(matrix, indexing='uv', center_origin=False):
     """
     Get coordinate matrixes with same size as input matrix. Coordinate matrix can either be uv or ij.
     :param matrix: Array whose shape will be used to determine coordinate matrix sizes.
     :type matrix: np.core.multiarray.ndarray
     :param indexing: String or either 'uv' or 'ij'
     :type indexing: str
+    :param center_origin: Whether to center the origo in matrix/image center.
+    :type center_origin: bool
     :return: Tuple of index matrices
     :rtype: tuple
     """
-    if indexing == 'ij':
-        return np.meshgrid(np.arange(matrix.shape[0]), np.arange(matrix.shape[1]), indexing='ij')
-    return np.meshgrid(np.arange(matrix.shape[1]), np.arange(matrix.shape[0]))
+    v, u = np.arange(matrix.shape[0]), np.arange(matrix.shape[1])
+    if center_origin:
+        v, u = v - v[-1] / 2, u - u[-1] / 2
+    return np.meshgrid(v, u, indexing='ij') if indexing == 'ij' else np.meshgrid(u, v)
 
 
 def r_coordinates(matrix, unit_scale=False, also_return_angle=False):
