@@ -107,7 +107,7 @@ def grabcut_mask_as_alpha_overlay(image, gc_mask, bg_col=None, pbg_col=(0, 0, 25
 
 def draw_circle_on_image(image, center_uv, radius, color=(255, 0, 0), thickness=cv2.FILLED,
                          line_type=cv2.LINE_AA, inplace=False):
-    image_out = image if inplace else image.copy()
+    image_out = ensure_image_for_drawing(image, color, inplace)
     center_uv_int = tuple(np.round(center_uv).astype(np.int32))
     radius_int = np.round(radius).astype(np.int32)
     color = tuple(int(i) for i in color)
@@ -116,7 +116,7 @@ def draw_circle_on_image(image, center_uv, radius, color=(255, 0, 0), thickness=
 
 
 def draw_line_segment_on_image(image, uv1, uv2, color=(255, 0, 0), thickness=1, line_type=cv2.LINE_AA, inplace=False):
-    image_out = image if inplace else image.copy()
+    image_out = ensure_image_for_drawing(image, color, inplace)
     pt1_int = tuple(np.round(uv1).astype(np.int32))
     pt2_int = tuple(np.round(uv2).astype(np.int32))
     color = tuple(int(i) for i in color)
@@ -125,20 +125,34 @@ def draw_line_segment_on_image(image, uv1, uv2, color=(255, 0, 0), thickness=1, 
 
 
 def draw_rectangle_on_image(image, uv1, uv2, color=(255, 0, 0), thickness=1, line_type=cv2.LINE_AA, inplace=False):
-    image_out = image if inplace else image.copy()
+    image_out = ensure_image_for_drawing(image, color, inplace)
     pt1_int = tuple(np.round(uv1).astype(np.int32))
     pt2_int = tuple(np.round(uv2).astype(np.int32))
     color = tuple(int(i) for i in color)
     cv2.rectangle(image_out, pt1_int, pt2_int, color=color, thickness=thickness, lineType=line_type)
     return image_out
 
+
 def draw_text_on_image(image, text, uv=(20, 50), font_face=cv2.FONT_HERSHEY_PLAIN, font_scale=3.0, color=(255, 0, 0),
                        thickness=3, line_type=cv2.LINE_AA, inplace=False):
-    image_out = image if inplace else image.copy()
+    image_out = ensure_image_for_drawing(image, color, inplace)
     pt_int = tuple(np.round(uv).astype(np.int32))
     color = tuple(int(i) for i in color)
     cv2.putText(image_out, text, pt_int, font_face, font_scale, color, thickness=thickness, lineType=line_type)
     return image_out
+
+
+def ensure_image_for_drawing(image, color, inplace):
+    converted = False
+    if image.dtype == np.bool:
+        image = 255 * image.astype(np.uint8)
+        converted = True
+    if image.ndim == 2 and np.array(color).ptp() > 0:
+        image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+        converted = True
+    if inplace and converted:
+        print("Warning. Image had to converted, so inplace drawing not performed")
+    return image if (inplace and not converted) else image.copy()
 
 
 def circle_detection(image, radii, accum_thres, slack=0, center_outside=False, output='ijr'):
