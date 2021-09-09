@@ -142,10 +142,10 @@ def draw_text_on_image(image, text, uv=(20, 50), font_face=cv2.FONT_HERSHEY_PLAI
     return image_out
 
 
-def draw_points_on_image(image, points_uv, point_size=7, color=(255, 0, 0), inplace=False):
+def draw_points_on_image(image, points_uv, point_size=15, color=(255, 0, 0), inplace=False):
     image_out = ensure_image_for_drawing(image, color, inplace)
-    points_uv = np.array(points_uv)
-    skeleton_mask = np.zeros(image.shape, np.bool)
+    points_uv = vt.intr(np.array(points_uv))
+    skeleton_mask = np.zeros(image.shape[:2], np.bool)
     skeleton_mask[points_uv[:, 1], points_uv[:, 0]] = True
     skeleton_mask = vt.morph('dilate', skeleton_mask, (point_size, point_size), strel_kind='circle_big')
     image_out[skeleton_mask] = color
