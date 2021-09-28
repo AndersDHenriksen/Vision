@@ -734,6 +734,11 @@ def intr(a):
     return int(round(a))
 
 
+def print_line(n=50):
+    """ print a line like: -------- """
+    print(n * "-")
+
+
 def confusion_matrix(y_label, y_predict, label_for_print=None):
     """
     Calculate and maybe plot confusion matrix. y_label and y_predict are assumed to increasing integers.
