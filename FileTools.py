@@ -6,6 +6,7 @@ import zipfile
 import tarfile
 import cv2
 
+
 def count_files(parent_folder, file_string, recursive=False):
     """
     Get the number of files which matches the file_string, * allowed. Also useful to check file existence.
@@ -87,9 +88,7 @@ def extract_file(compressed_file_path, delete_archive=False, fail_silently=False
 
 
 def download_h264_codec():
-    """
-    Download h264 codec file to current directory.
-    """
+    """ Download h264 codec file to current directory. """
     if count_files(Path.cwd(), 'openh264*.dll'):
         return
     url = r"https://github.com/cisco/openh264/releases/download/v1.8.0/openh264-1.8.0-win64.dll.bz2"
@@ -130,6 +129,7 @@ def sort_image_files(img_dir, pattern="*.png"):
 
 
 def convert_images_in_folders(img_dir, pattern="*.bmp", output_extension="jpg"):
+    """ Find certain image type and convert them to save space, e.g. bmp -> jpg """
     for img_path in sorted(Path(img_dir).rglob(pattern)):
         img = cv2.imread(str(img_path))
         if img.ptp(axis=2).max() == 0:
@@ -139,6 +139,12 @@ def convert_images_in_folders(img_dir, pattern="*.bmp", output_extension="jpg"):
             raise Exception(f"Could not convert {img_path}")
         print(f"Converted: {img_path}")
         img_path.unlink()
+
+
+def rename_pylon_images(img_dir, extension="png"):
+    """ Rename images files: Image__2021-09-28__09-46-47.png -> 2021-09-28 09-46-47.png """
+    for img_path in Path(img_dir).rglob(f"Image__*.{extension}"):
+        img_path.rename(img_path.parent / img_path.name[7:].replace('__', ' '))
 
 
 # Create monkey patches
@@ -158,3 +164,6 @@ def _move_to_subfolder(self, subfolder_name):
 # Apply monkey patches
 Path.copy = _copy
 Path.move_to_subfolder = _move_to_subfolder
+
+if __name__ == "__main__":
+    pass
