@@ -22,6 +22,13 @@ def try_except_pass():
         pass
 
 
+@contextmanager
+def timeit():
+    start = time.time()
+    yield
+    print(f"Call took: {time.time()-start} sec")
+
+
 def setup_logger(log_file_name=None, name=None):
     # logging.basicConfig(stream=sys.stdout, level=logging.DEBUG, format='%(asctime)s | %(levelname)5s | %(message)s')
     logger = logging.getLogger(name)
