@@ -26,7 +26,7 @@ def try_except_pass():
 def timeit():
     start = time.time()
     yield
-    print(f"Call took: {time.time()-start} sec")
+    print(f"Call took: {time.time()-start:.3f} sec")
 
 
 def setup_logger(log_file_name=None, name=None):
