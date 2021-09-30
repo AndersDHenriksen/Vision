@@ -717,6 +717,16 @@ def unit_vector(vector):
     return np.array(vector) / np.linalg.norm(vector)
 
 
+def cosd(a):
+    """ cos for degree input """
+    return np.cos(np.deg2rad(a))
+
+
+def sind(a):
+    """ sin for degree input """
+    return np.sin(np.deg2rad(a))
+
+
 def intr(a):
     """
     Round and convert to integer. Especially useful for indexing.
