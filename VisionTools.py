@@ -244,11 +244,12 @@ def bw_left_and_right_edge(bw_image):
     :return: (left_edge, right_edge) as np.arrays
     :rtype: tuple
     """
-    assert bw_image.size and bw_image.any(axis=1).all()
+    # assert bw_image.size and bw_image.any(axis=1).all()
     us_vs = cv2.findNonZero(bw_image.astype(np.uint8))
     us, vs = us_vs[:, 0, 0], us_vs[:, 0, 1]
-    right_edge = us[np.append(np.diff(vs) > 0, True)]
-    left_edge = us[np.append(True, np.diff(vs) > 0)]
+    is_line_shift = np.diff(vs) > 0
+    right_edge = us[np.append(is_line_shift, True)]
+    left_edge = us[np.append(True, is_line_shift)]
     return left_edge, right_edge
 
 
