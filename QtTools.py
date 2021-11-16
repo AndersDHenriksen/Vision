@@ -124,3 +124,31 @@ class TagMonitor(qtc.QObject):  # Designed with EthernetIP in mind
         if value != self.last_value:
             self.last_value = value
             self.change_signal.emit(value)
+
+
+class Worker(qtc.QObject):
+    start_signal = qtc.pyqtSignal(tuple, dict)
+
+    def __init__(self, func, done_func=None, exception_func=print):
+        super().__init__()
+        self.thread = qtc.QThread()
+        self.moveToThread(self.thread)
+        self.thread.start()
+        self.func = func
+        self.result = None
+        self.done_func = done_func
+        self.exception_func = exception_func
+        self.start_signal.connect(self._run)
+
+    def __call__(self, *args, **kwargs):
+        self.start_signal.emit(args, kwargs)
+
+    @qtc.pyqtSlot(tuple, dict)
+    def _run(self, args, kwargs):
+        try:
+            self.result = self.func(*args, **kwargs)
+            if self.done_func:
+                self.done_func(self.result)
+        except Exception as e:
+            if self.exception_func:
+                self.exception_func(e)
