@@ -1,5 +1,6 @@
 import sys
 import logging
+import functools
 from logging.handlers import RotatingFileHandler
 
 from PyQt5 import QtWidgets as qtw
@@ -152,3 +153,26 @@ class Worker(qtc.QObject):
         except Exception as e:
             if self.exception_func:
                 self.exception_func(e)
+
+
+class OwnThread(qtc.QObject):
+    start_signal = qtc.pyqtSignal(tuple, dict)
+
+    def __init__(self, func):
+        super().__init__()
+        functools.update_wrapper(self, func)
+        self.thread = qtc.QThread()
+        self.moveToThread(self.thread)
+        self.thread.start()
+        self.func = func
+        self.start_signal.connect(self._run)
+
+    def __call__(self, *args, **kwargs):
+        self.start_signal.emit(args, kwargs)
+
+    def __get__(self, instance, owner):
+        return functools.partial(self.__call__, instance)
+
+    @qtc.pyqtSlot(tuple, dict)
+    def _run(self, args, kwargs):
+        self.func(*args, **kwargs)
