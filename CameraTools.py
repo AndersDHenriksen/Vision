@@ -37,11 +37,13 @@ class CameraWrapper:
         self.camera.TriggerMode = "Off"
         self.software_trigger = False
 
-    def grab(self):
+    def grab(self, wait_for_image=True):
         if not self.camera.IsGrabbing():
             self.camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly)
         if self.software_trigger:
             self.camera.ExecuteSoftwareTrigger()
+        if not wait_for_image and not self.camera.GetGrabResultWaitObject().Wait(0):
+            return
         image = None
         with self.camera.RetrieveResult(1000) as grabResult:
             if grabResult.GrabSucceeded():
