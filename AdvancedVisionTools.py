@@ -389,3 +389,10 @@ def save_video_clip(file_name, frame_list, frame_rate=20):
     out.release()
     print(clip_path, flush=True)
 
+
+def tesseract_ocr(image_bgr, is_digit=False):
+    import pytesseract  # conda install -c conda-forge pytesseract
+    # Binary installer from: https://github.com/UB-Mannheim/tesseract/wiki
+    pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract"
+    return pytesseract.image_to_string(image_bgr, config='digits --psm 7' if is_digit else '--psm 7')  # Maybe add: --oem 3
+
