@@ -714,6 +714,18 @@ def distance_to_fit(y):
     return y - np.polyval(fit_line(x, y), x)
 
 
+def match_template(image, template, method=cv2.TM_CCOEFF_NORMED, mask=None):
+    """ Wrapper for cv2.matchTemplate but output is same size as input image """
+    assert image.ndim == template.ndim, "Image and template should have same number of dimensions"
+    if image.dtype == 'bool':
+        image = 255 * image.astype(np.uint8)
+    if template.dtype == 'bool':
+        template = 255 * template.astype(np.uint8)
+    mt_out = cv2.matchTemplate(image, template, method, mask)
+    th, tw = template.shape
+    return cv2.copyMakeBorder(mt_out, th//2, th - th//2 - 1, tw//2, tw - tw//2 - 1, cv2.BORDER_REPLICATE)
+
+
 def unit_vector(vector):
     """ Returns the unit vector of the vector. """
     return np.array(vector) / np.linalg.norm(vector)
