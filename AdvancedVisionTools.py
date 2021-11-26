@@ -152,8 +152,10 @@ def draw_points_on_image(image, points_uv, point_size=15, color=(255, 0, 0), inp
     return image_out
 
 
-def draw_mask_on_image(image, mask, color=(255, 0, 0), inplace=False):
+def draw_mask_on_image(image, mask, color=(255, 0, 0), dilate_r=0, inplace=False):
     image_out = ensure_image_for_drawing(image, color, inplace)
+    if dilate_r:
+        mask = vt.morph('dilate', mask, (dilate_r, dilate_r), 'circle_big')
     image_out[mask] = color
     return image_out
 
