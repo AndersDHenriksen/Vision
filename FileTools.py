@@ -7,6 +7,14 @@ import tarfile
 import cv2
 
 
+def write_string_to_file(file_name, text_string):
+    """
+    Wrapper for context manager filehandler and its write method
+    """
+    with open(file_name, "w") as text_file:
+        text_file.write(text_string)
+
+
 def count_files(parent_folder, file_string, recursive=False):
     """
     Get the number of files which matches the file_string, * allowed. Also useful to check file existence.
