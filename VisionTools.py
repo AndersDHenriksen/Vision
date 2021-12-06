@@ -144,8 +144,18 @@ def bw_reconstruct(marker, mask):
     areas_num, labels = cv2.connectedComponents(mask.astype(np.uint8))
     labels_to_keep = np.unique(labels[marker.astype(np.bool)])
     labels_to_keep = labels_to_keep[1:] if labels_to_keep.size and labels_to_keep[0] == 0 else labels_to_keep
-    out_mask = np.isin(labels, labels_to_keep)
+    out_mask = isin(labels, labels_to_keep, areas_num)
     return out_mask
+
+
+def isin(labels, keep_list, areas_num):
+    """
+    Wrapper for np.isin that scales better for many blobs
+    """
+    if areas_num is None or areas_num < 10:
+        return np.isin(labels, keep_list)
+    idx_to_keep = idx_to_bool_array(keep_list, areas_num)
+    return idx_to_keep[labels]
 
 
 def bw_area_filter(mask, n=1, area_range=(0, np.inf), output='mask'):
@@ -176,7 +186,7 @@ def bw_area_filter(mask, n=1, area_range=(0, np.inf), output='mask'):
         keep_areas = keep_areas[0]
     if output == 'area':
         return keep_areas
-    keep_mask = np.isin(labels, inside_range_idx[keep_idx] + 1)
+    keep_mask = isin(labels, inside_range_idx[keep_idx] + 1, areas_num)
     if output == 'mask':
         return keep_mask
     return keep_mask, keep_areas
@@ -503,6 +513,21 @@ def find(a, if_none=np.nan):
     """
     a_idx = np.flatnonzero(a)
     return a_idx if a_idx.size else np.array([if_none])
+
+
+def idx_to_bool_array(true_idx, array_length):
+    """
+    Create a boolean array and set certain index to true, i.e. reverse of np.flatnonzero / vt.find.
+    :param true_idx: indexes which should be true
+    :type true_idx: np.core.multiarray.ndarray
+    :param array_length: length/size of output
+    :type array_length: int
+    :return: boolean array with true_idx set to true
+    :rtype: np.core.multiarray.ndarray
+    """
+    bool_array = np.zeros((array_length,), bool)
+    bool_array[true_idx] = True
+    return bool_array
 
 
 def rolling_window(a, window):
