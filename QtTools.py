@@ -63,6 +63,30 @@ class QDarkPalette(qtg.QPalette):
         self.set_stylesheet(app)
 
 
+class QLed(qtw.QWidget):
+    def __init__(self, parent=None, **kwargs):
+        qtw.QWidget.__init__(self, parent, **kwargs)
+        self.colour_dict = {-1: qtc.Qt.red, 0: qtc.Qt.gray, 1: qtc.Qt.green}
+        self.current_color = self.colour_dict[0]
+        self.sizeHint = lambda: qtc.QSize(50, 50)
+
+    def setState(self, state):
+        assert state in self.colour_dict.keys()
+        self.current_color = self.colour_dict[state]
+
+    def paintEvent(self, event):
+        painter = qtg.QPainter(self)
+        painter.setPen(qtg.QPen(self.parent().palette().button().color(), 2, qtc.Qt.SolidLine))
+        painter.setRenderHint(qtg.QPainter.Antialiasing, True)
+
+        radialGradient = qtg.QRadialGradient(qtc.QPoint(25, 25), 50)
+        radialGradient.setColorAt(0.1, self.current_color)
+        if self.current_color != qtc.Qt.gray:
+            radialGradient.setColorAt(0.7, qtg.QColor(self.current_color).darker())
+        painter.setBrush(qtg.QBrush(radialGradient))
+        painter.drawEllipse(3, 3, 44, 44)
+
+
 class SetupLogger(qtc.QObject):
 
     def __init__(self, log_q_text_edit=None, log_file_name=None):
