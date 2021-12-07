@@ -73,6 +73,7 @@ class QLed(qtw.QWidget):
     def setState(self, state):
         assert state in self.colour_dict.keys()
         self.current_color = self.colour_dict[state]
+        self.update()
 
     def paintEvent(self, event):
         painter = qtg.QPainter(self)
@@ -81,8 +82,7 @@ class QLed(qtw.QWidget):
 
         radialGradient = qtg.QRadialGradient(qtc.QPoint(25, 25), 50)
         radialGradient.setColorAt(0.1, self.current_color)
-        if self.current_color != qtc.Qt.gray:
-            radialGradient.setColorAt(0.7, qtg.QColor(self.current_color).darker())
+        radialGradient.setColorAt(0.7, qtg.QColor(self.current_color).darker())
         painter.setBrush(qtg.QBrush(radialGradient))
         painter.drawEllipse(3, 3, 44, 44)
 
