@@ -234,6 +234,12 @@ def bw_clear_border(mask):
     :return: Filtered binary mask
     :rtype: np.core.multiarray.ndarray
     """
+    if mask.ndim == 1:
+        if mask[0]:
+            mask[:find(np.diff(mask), mask.size - 1)[0] + 1] = False
+        if mask[-1]:
+            mask[find(np.diff(mask), 0)[-1]:] = False
+        return mask
     marker = np.zeros_like(mask)
     marker[(0, -1), :] = marker[:, (0, -1)] = True
     return mask ^ bw_reconstruct(marker, mask)
