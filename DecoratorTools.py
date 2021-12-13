@@ -78,8 +78,9 @@ def path2image(enforce_grayscale=False, load_from_shared_memory=False):
                 if load_from_shared_memory:
                     try:
                         existing_shm = shared_memory.SharedMemory(name=md5(args[0]))
-                        img_shape = Image.open(args[0]).size
-                        image = np.ndarray(img_shape[::-1], dtype=np.uint8, buffer=existing_shm.buf)
+                        pil_image = Image.open(args[0])
+                        img_shape = pil_image.size[::-1] if pil_image.mode == 'L' else pil_image.size[::-1] + (3,)
+                        image = np.ndarray(img_shape, dtype=np.uint8, buffer=existing_shm.buf)
                     except FileNotFoundError:
                         print("Image could not be found in shared memory. Loading from disc.")
                         image = cv2.imread(str(args[0]), cv2.IMREAD_GRAYSCALE if enforce_grayscale else -1)
@@ -108,4 +109,4 @@ def put_images_into_shared_memory(img_dir, pattern="*.png", enforce_grayscale=Fa
 
 if __name__ == "__main__":
     print(f"DecoratorTools called with argv: {sys.argv[1:]}")
-    put_images_into_shared_memory(sys.argv[1], enforce_grayscale=True)
+    put_images_into_shared_memory(sys.argv[1], enforce_grayscale=False)
