@@ -109,4 +109,4 @@ def put_images_into_shared_memory(img_dir, pattern="*.png", enforce_grayscale=Fa
 
 if __name__ == "__main__":
     print(f"DecoratorTools called with argv: {sys.argv[1:]}")
-    put_images_into_shared_memory(sys.argv[1], enforce_grayscale=False)
+    put_images_into_shared_memory(sys.argv[1], enforce_grayscale=len(sys.argv) < 3 or sys.argv[2] != 'color')
