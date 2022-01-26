@@ -1,8 +1,12 @@
 from pathlib import Path
 import numpy as np
 import cv2
-from . import VisionTools as vt
-from . import FileTools as ft
+try:
+    from . import VisionTools as vt
+    from . import FileTools as ft
+except ImportError:
+    import VisionTools as vt
+    import FileTools as ft
 
 
 def grabcut_using_mask(image, gc_mask, iterations=5, modify_mask_in_place=False):
@@ -352,11 +356,11 @@ def save_video_clip(file_name, frame_list, frame_rate=20):
     Take a list of images and convert them to a video clip. Example usage:
     save_video_clip("time_lapse", list(Path(r"images").glob("*.png"))
     :param file_name: Output video file name. cwd / file_name .mp4
-    :param file_name: str
+    :type file_name: str
     :param frame_list: List of images. Can also be list of image paths
-    :param frame_list: Union[list, tuple, np.core.multiarray.ndarray]
+    :type frame_list: Union[list, tuple, np.core.multiarray.ndarray]
     :param frame_rate: Video fps
-    :param frame_rate: Union[int, float]
+    :type frame_rate: Union[int, float]
     :return: None
     :rtype: NoneType
     """
@@ -366,14 +370,11 @@ def save_video_clip(file_name, frame_list, frame_rate=20):
         return
     if isinstance(frame_list[0], str) or isinstance(frame_list[0], Path):
         frame_list = [cv2.imread(str(fp)) for fp in frame_list]
-    if frame_list[0].ndim == 2:
-        frame_list = [cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR) for frame in frame_list]
     frame_sizes = np.array([f.shape for f in frame_list])
     if frame_sizes.ptp(axis=0).any():
         print("Warning: Frames have different sizes will crop to same size")
         min_size = frame_sizes.min(axis=0)
         frame_list = [frame[:min_size[0], :min_size[1], :] for frame in frame_list]
-
 
     ft.download_h264_codec()
     codec = 'avc1'  # 'avc1'  # Alternative 'mp4v' 'xvid'
@@ -392,9 +393,59 @@ def save_video_clip(file_name, frame_list, frame_rate=20):
     print(clip_path, flush=True)
 
 
+def video_frame_generator(video_path):
+    """
+    Yield all frames from video file. First frame is used to determine if grayscale.
+    :param video_path: Path to input video
+    :param video_path: Union[str, path]
+    :return: Consequetive frames
+    :rtype: np.ndarray
+    """
+    is_gray = None
+    cap = cv2.VideoCapture(str(video_path))
+    video_frame_generator.fps = cap.get(cv2.CAP_PROP_FPS) or 20
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            break
+        if is_gray is None:
+            is_gray = frame.ptp(axis=-1).max() == 0
+        if is_gray:
+            yield frame[:, :, 0]
+        else:
+            yield frame
+    cap.release()
+
+
+def transcode_video(video_path):
+    """
+    Take a video file and convert it to h264 format.
+    :param video_path: Path to input video
+    :type video_path: Union[str, path]
+    :return: None
+    :rtype: NoneType
+    """
+    video_path = Path(video_path)
+    new_path = video_path.parent / f"{video_path.stem}_h264"
+    frame_list = list(video_frame_generator(video_path))
+    save_video_clip(new_path, frame_list, video_frame_generator.fps)
+
+
 def tesseract_ocr(image_bgr, is_digit=False):
+    """
+    Try to find text in image (ocr) using google tesseract.
+    :param image_bgr: Input image to find text in
+    :type image_bgr: np.ndarray
+    :param is_digit: Whether input is a number
+    :type is_digit: bool
+    :return: Identified text string
+    :rtype: str
+    """
     import pytesseract  # conda install -c conda-forge pytesseract
     # Binary installer from: https://github.com/UB-Mannheim/tesseract/wiki
     pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract"
     return pytesseract.image_to_string(image_bgr, config='digits --psm 7' if is_digit else '--psm 7')  # Maybe add: --oem 3
 
+
+if __name__ == "__main__":
+    pass
