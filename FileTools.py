@@ -169,9 +169,16 @@ def _move_to_subfolder(self, subfolder_name):
     return self.rename(new_path)
 
 
+def _delete(self):
+    """ Delete file or folder if it exists. """
+    if self.exists():
+        return shutil.rmtree(self) if self.is_dir() else self.unlink()
+
+
 # Apply monkey patches
 Path.copy = _copy
 Path.move_to_subfolder = _move_to_subfolder
+Path.delete = _delete
 
 if __name__ == "__main__":
     pass
