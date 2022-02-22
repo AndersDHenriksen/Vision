@@ -246,7 +246,7 @@ class QSpinner(WaitingSpinner):  # Spinner with new default values and that can 
     _signal_stop = qtc.pyqtSignal()
 
     def __init__(self, parent, center_on_parent=True, disable_parent_when_spinning=True,
-                 modality=qtc.Qt.ApplicationModal, roundness=100., opacity=None, fade=80., lines=20,
+                 modality=qtc.Qt.NonModal, roundness=100., opacity=None, fade=80., lines=20,
                  line_length=50, line_width=4, radius=50, speed= 1, color=(50, 50, 255)):
         super().__init__(parent, center_on_parent, disable_parent_when_spinning, modality, roundness, opacity, fade, lines,
                          line_length, line_width, radius, speed, color)
