@@ -7,6 +7,11 @@ from PyQt5 import QtWidgets as qtw
 from PyQt5 import QtGui as qtg
 from PyQt5 import QtCore as qtc
 
+try:
+    from pyqtspinner.spinner import WaitingSpinner  # pip install pyqtspinner
+except ImportError:
+    WaitingSpinner = object
+
 
 WHITE =     qtg.QColor(255, 255, 255)
 BLACK =     qtg.QColor(0, 0, 0)
@@ -181,22 +186,83 @@ class Worker(qtc.QObject):
 
 class OwnThread(qtc.QObject):
     start_signal = qtc.pyqtSignal(tuple, dict)
+    done_signal = qtc.pyqtSignal()
 
-    def __init__(self, func):
+    def __init__(self, func, done_slot=None):
         super().__init__()
+        self.orig_func = func
+        self.instance_func = None
+        self.result = None
+        if done_slot is not None:
+            self.done_signal.connect(done_slot)
         functools.update_wrapper(self, func)
         self.thread = qtc.QThread()
         self.moveToThread(self.thread)
         self.thread.start()
-        self.func = func
         self.start_signal.connect(self._run)
 
     def __call__(self, *args, **kwargs):
-        self.start_signal.emit(args, kwargs)
+        self.result = self.start_signal.emit(args, kwargs)
 
     def __get__(self, instance, owner):
-        return functools.partial(self.__call__, instance)
+        # return functools.partial(self.__call__, instance)  # Alternative if no need to access func.done_signal
+        self.instance_func = self.instance_func or instance
+        return self
 
     @qtc.pyqtSlot(tuple, dict)
     def _run(self, args, kwargs):
-        self.func(*args, **kwargs)
+        self.orig_func(self.instance_func, *args, **kwargs)
+        self.done_signal.emit()
+
+
+class QTimerMultiThread(qtc.QTimer):  # Timer that can be started/stopped from all threads
+    _signal_start = qtc.pyqtSignal()
+    _signal_stop = qtc.pyqtSignal()
+
+    def __init__(self, *args, timeout_call=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._signal_start.connect(self._start_slot)
+        self._signal_stop.connect(self._stop_slot)
+        if timeout_call:
+            self.connect(timeout_call)
+
+    @qtc.pyqtSlot()
+    def _start_slot(self):
+        super().start()
+
+    @qtc.pyqtSlot()
+    def _stop_slot(self):
+        super().stop()
+
+    def start(self):
+        self._signal_start.emit()
+
+    def stop(self):
+        self._signal_stop.emit()
+
+
+class QSpinner(WaitingSpinner):  # Spinner with new default values and that can be started/stopped from all threads
+    _signal_start = qtc.pyqtSignal()
+    _signal_stop = qtc.pyqtSignal()
+
+    def __init__(self, parent, center_on_parent=True, disable_parent_when_spinning=True,
+                 modality=qtc.Qt.ApplicationModal, roundness=100., opacity=None, fade=80., lines=20,
+                 line_length=50, line_width=4, radius=50, speed= 1, color=(50, 50, 255)):
+        super().__init__(parent, center_on_parent, disable_parent_when_spinning, modality, roundness, opacity, fade, lines,
+                         line_length, line_width, radius, speed, color)
+        self._signal_start.connect(self._start_slot)
+        self._signal_stop.connect(self._stop_slot)
+
+    @qtc.pyqtSlot()
+    def _start_slot(self):
+        super().start()
+
+    @qtc.pyqtSlot()
+    def _stop_slot(self):
+        super().stop()
+
+    def start(self):
+        self._signal_start.emit()
+
+    def stop(self):
+        self._signal_stop.emit()
