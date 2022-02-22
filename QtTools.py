@@ -215,7 +215,7 @@ class OwnThread(qtc.QObject):
         self.done_signal.emit()
 
 
-class QTimerMultiThread(qtc.QTimer):  # Timer that can be started/stopped from all threads
+class QTimer(qtc.QTimer):  # Timer that can be started/stopped from all threads
     _signal_start = qtc.pyqtSignal()
     _signal_stop = qtc.pyqtSignal()
 
