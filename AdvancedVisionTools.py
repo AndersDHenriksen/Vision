@@ -307,7 +307,7 @@ def fit_line(x, y):
     :param y: 1D vector
     :type y: np.core.multiarray.ndarray
     :return:  Tuple of (slope, intercept)
-    :rtype: tuple
+    :rtype: np.core.multiarray.ndarray
     """
     params = cv2.fitLine(np.vstack((x, y)).T, cv2.DIST_L2, 0, 0.01, 0.01)
 
@@ -323,7 +323,7 @@ def fit_line(x, y):
     slope = (end_y - start_y) / (end_x - start_x)
     intercept = start_y - (start_x * slope)
 
-    return slope, intercept
+    return np.array([slope, intercept])
 
 
 def fit_circle(x, y):
