@@ -1,6 +1,14 @@
 import time
+import json
+import configparser
 from pathlib import Path
+import numpy as np
+import cv2
 from pypylon import pylon
+try:
+    from . import VisionTools as vt
+except ImportError:
+    import VisionTools as vt
 
 
 class CameraWrapper:
@@ -61,7 +69,6 @@ class CameraWrapper:
         self.camera.Close()
 
     def live_view(self, save_folder=Path.cwd()):
-        import cv2
         print("Starting liveview. Controls are:\nspace: pause\nenter: save\nq\esc: quit")
         pause = False
         while True:
@@ -80,6 +87,109 @@ class CameraWrapper:
                 filename = time.strftime(f"%Y-%m-%d %H-%M-%S", time.localtime()) + ".png"
                 print(f"Saving image to {str(Path(save_folder) / filename)}")
                 cv2.imwrite(str(Path(save_folder) / filename), image)
+
+
+class CheckerboardCalibrator:
+    def __init__(self, config_load_path=None):
+        self.config = configparser.ConfigParser()
+        self.CameraMatrix = np.eye(3)
+        self.DistortionCoefficients = np.zeros((5,))
+        self.PerspectiveTransform = None
+        self.PixelsPerMm = None
+        if config_load_path is not None:
+            self.import_from_config_file(config_load_path)
+
+    def calibrate_from_checkerboard(self, image, do_perspective_transform=False, square_side_length=None):
+        """Calibration based on a checkerboard target. Assume black square on white background"""
+        h, w = image.shape
+
+        # Estimate angel
+        grad_x, grad_y = cv2.Sobel(image, cv2.CV_64F, 1, 0), cv2.Sobel(image, cv2.CV_64F, 0, 1)
+        grad_n, grad_a = np.sqrt(grad_x ** 2 + grad_y ** 2), np.arctan2(grad_x, grad_y)
+        hist_count, hist_axis = np.histogram(grad_a, bins=360, weights=grad_n)
+        rough_angle = hist_axis[hist_count.argmax()] * 180 / np.pi
+        rough_angle = (rough_angle + 45) % 90 - 45  # keep it within -45, 45. Maybe not important
+        img_rot = vt.simple_rotate(255 - image, rough_angle)  # Also invert, so white background is black like border
+        # Count squares
+        black_squares = vt.morph('erode', img_rot > 128, (11, 11))
+        retval, labels, stats, centroids = cv2.connectedComponentsWithStats(black_squares.astype(np.uint8))
+        areas = stats[:, 4]
+        centroids = centroids[np.abs(1 - areas / np.median(areas)) < .2]
+        d_centroid = np.diff(centroids[:, 1])
+        cy = sum(d_centroid > d_centroid.max() / 2)
+        cx = vt.intr(2 * centroids.shape[0] / (cy + 1) - 1)
+        if abs(2 * centroids.shape[0] - (cx + 1) * (cy + 1)) > 1:
+            print("Calibration Warning: Number of identified black squares is off.")
+
+        # Finding the checkerboard corners
+        corners_found, corners = cv2.findChessboardCorners(image, (cx, cy), cv2.CALIB_CB_ADAPTIVE_THRESH)
+        if not corners_found:
+            raise Exception("Calibration failed.")
+        # vt.showimg(avt.draw_points_on_image(img, np.squeeze(corners)))
+
+        # Refine corners. This doesn't do much actually
+        criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 50, 0.01)
+        corners = cv2.cornerSubPix(image, corners, (11, 11), (-1, -1), criteria)
+
+        # Calculate camera calibration
+        corners = np.squeeze(corners)
+        count_xy = np.arange(cx * cy)
+        object_points = np.dstack((count_xy % cx, count_xy // cx, np.zeros_like(count_xy))).astype(np.float32)
+        ret, self.CameraMatrix, self.DistortionCoefficients, rvecs, tvecs = cv2.calibrateCamera(object_points, corners[None, ...], (w, h), None, None)
+        corners = cv2.undistortPoints(corners, self.CameraMatrix, self.DistortionCoefficients, P=self.CameraMatrix)[:, 0, :]
+
+        if do_perspective_transform:
+            img_4corners = np.vstack((corners[0], corners[cx - 1], corners[-cx], corners[-1]))
+            calib_w, calib_h = np.linalg.norm(corners[0] - corners[cx - 1]), np.linalg.norm(corners[0] - corners[-cx])
+            calib_c = (corners[0] + corners[-1]) / 2
+            obj_4corners = np.array([(-calib_w / 2, -calib_h / 2), (calib_w / 2, -calib_h / 2),
+                                     (-calib_w / 2, calib_h / 2), (calib_w / 2, calib_h / 2)], dtype=np.float32) + calib_c
+            # get the perspective transformation matrix (extrinsic)
+            self.PerspectiveTransform = cv2.getPerspectiveTransform(img_4corners, obj_4corners)
+            corners = cv2.perspectiveTransform(corners[:, None, :], self.PerspectiveTransform)
+
+        if square_side_length:
+            corners_grid = corners.reshape((cx, cy, 2))
+            side_length_x = np.linalg.norm(np.diff(corners_grid, axis=0), axis=-1).mean()
+            side_length_y = np.linalg.norm(np.diff(corners_grid, axis=1), axis=-1).mean()
+            self.PixelsPerMm = (side_length_x / 2 + side_length_y / 2) / square_side_length
+
+        image = self.undistort(image)
+        if image.ndim == 2:
+            image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+        image = cv2.drawChessboardCorners(image, (cx, cy), corners, corners_found)
+        return image
+
+    def undistort(self, image):
+        """ This function undistorts the raw image """
+        image = cv2.undistort(image, self.CameraMatrix, self.DistortionCoefficients)
+        if self.PerspectiveTransform is not None:
+            h, w = image.shape
+            image = cv2.warpPerspective(image, self.PerspectiveTransform, (w, h), borderMode=cv2.BORDER_REPLICATE)
+        return image
+
+    def import_from_config_file(self, config_path):
+        self.config.read(config_path)
+        if not self.config.has_section('Calibration'):
+            print("Config file has no calibration section to import.")
+            return
+        self.DistortionCoefficients = np.array(json.loads(self.config['Calibration']['Distortion_Coefficients']))
+        self.CameraMatrix = np.array(json.loads(self.config['Calibration']['Camera_Matrix']))
+        if self.config.has_option('Calibration', 'Perspective_Transform'):
+            self.PerspectiveTransform = np.array(json.loads(self.config['Calibration']['Perspective_Transform']))
+        if self.config.has_option('Calibration', 'Pixels_Per_Mm'):
+            self.PixelsPerMm = float(self.config['Calibration']['Pixels_Per_Mm'])
+
+    def export_to_config_file(self, config_path):
+        self.config.read(config_path)
+        self.config['Calibration'] = {"Distortion_Coefficients": self.DistortionCoefficients.ravel().tolist(),
+                                      "Camera_Matrix": self.CameraMatrix.tolist()}
+        if self.PerspectiveTransform is not None:
+            self.config['Calibration']['Perspective_Transform'] = str(self.PerspectiveTransform.tolist())
+        if self.PixelsPerMm is not None:
+            self.config['Calibration']['Pixels_Per_Mm'] = str(self.PixelsPerMm)
+        with open(config_path, "w") as configfile:
+            self.config.write(configfile)
 
 
 if __name__ == '__main__':
