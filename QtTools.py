@@ -1,6 +1,7 @@
 import sys
 import logging
 import functools
+from pathlib import Path
 from logging.handlers import RotatingFileHandler
 
 from PyQt5 import QtWidgets as qtw
@@ -266,3 +267,69 @@ class QSpinner(WaitingSpinner):  # Spinner with new default values and that can 
 
     def stop(self):
         self._signal_stop.emit()
+
+
+class TableModel(qtc.QAbstractTableModel):
+    def __init__(self, table_view, header_list, numbering='ascending', n_digits=2, resize_columns=False, data=None):
+        assert numbering in [None, 'ascending', 'descending']
+        super(TableModel, self).__init__()
+        self._data = data or []
+        self.n_digits = n_digits
+        self.header_list = header_list
+        self.numbering = numbering
+        self.last_save_path = qtc.QDir.homePath()
+        self.table_view = table_view
+        self.table_view.setModel(self)
+        self.resize_columns = resize_columns
+
+    def data(self, index, role):
+        if role == qtc.Qt.DisplayRole:
+            data_point = self._data[index.row()][index.column()]
+            return data_point if isinstance(data_point, str) else f"{data_point:.{self.n_digits}f}"
+
+    def setData(self, index, value, role):
+        if role == qtc.Qt.EditRole:
+            try:
+                self._data[index.row()][index.column()] = float(value)
+            except ValueError:
+                self._data[index.row()][index.column()] = value
+            return True
+
+    def rowCount(self, index=None):
+        return len(self._data) if self._data else 0
+
+    def columnCount(self, index=None):
+        return len(self.header_list)
+
+    def flags(self, index):
+        return qtc.Qt.ItemIsSelectable | qtc.Qt.ItemIsEnabled | qtc.Qt.ItemIsEditable
+
+    def headerData(self, section, orientation, role):
+        if role == qtc.Qt.DisplayRole:
+            if orientation == qtc.Qt.Horizontal:
+                return self.header_list[section]
+            if orientation == qtc.Qt.Vertical and self.numbering:
+                return str(section + 1) if self.numbering == 'ascending' else str(self.rowCount() - section)
+
+    def update_table(self):
+        self.layoutChanged.emit()
+        if self.resize_columns:
+            self.table_view.resizeColumnsToContents()
+
+    def export(self, filename=None, allow_excel_export=True):
+        extensions = 'CSV File (*.csv);;Excel File (*.xlsx)' if allow_excel_export else 'CSV File (*.csv)'
+        if not isinstance(filename, (str, Path)):
+            filename, _ = qtw.QFileDialog.getSaveFileName(None, "Select the file to save to…", self.last_save_path, extensions)
+        if filename == '':
+            return
+        if filename[-3:] == 'csv':
+            import numpy as np
+            self.last_save_path = str(Path(filename).parent)
+            np.savetxt(filename, self._data, fmt='%s', delimiter=', ', header=", ".join(self.header_list))
+        elif filename[-4:] == 'xlsx':
+            from openpyxl import Workbook
+            wb = Workbook()
+            ws1 = wb.active
+            [ws1.append(d) for d in [self.header_list] + self._data]
+            wb.save(filename)
+        return filename
