@@ -1,3 +1,4 @@
+from pathlib import Path
 import numpy as np
 import cv2
 
@@ -833,6 +834,28 @@ def put_text(image, text, position_uv, font=cv2.FONT_HERSHEY_SIMPLEX, font_scale
         image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
     position_uv = tuple(intr(position_uv))
     return cv2.putText(image, text, position_uv, font, font_scale, color, thickness, cv2.LINE_AA)
+
+
+def imread(image_path, enforce_grayscale=False, use_npy_file=False):
+    """
+    Wrapper for cv2.imread that can also save/load using .npy file for faster loading but requiring HD space.
+    :param image_path: Path to the image file
+    :type image_path: Union[str, pathlib.Path]
+    :param enforce_grayscale: Whether image should be read as gray scale
+    :type enforce_grayscale: bool
+    :param use_npy_file: Whether to save/load to .npy data files for faster loading
+    :type use_npy_file: bool
+    :return: Image
+    :rtype: np.core.multiarray.ndarray
+    """
+    image_path = Path(image_path)
+    if use_npy_file:
+        npy_path = image_path.with_suffix('.npy')
+        if npy_path.exists():
+            return np.load(npy_path)
+    image = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE if enforce_grayscale else None)
+    if use_npy_file:
+        np.save(npy_path, image)
 
 
 def rgb_like(image, color="red"):
