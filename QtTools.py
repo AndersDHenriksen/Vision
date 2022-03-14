@@ -270,6 +270,8 @@ class QSpinner(WaitingSpinner):  # Spinner with new default values and that can 
 
 
 class TableModel(qtc.QAbstractTableModel):
+    _signal_update = qtc.pyqtSignal()
+
     def __init__(self, table_view, header_list, numbering='ascending', n_digits=2, resize_columns=False, data=None):
         assert numbering in [None, 'ascending', 'descending']
         super(TableModel, self).__init__()
@@ -281,6 +283,7 @@ class TableModel(qtc.QAbstractTableModel):
         self.table_view = table_view
         self.table_view.setModel(self)
         self.resize_columns = resize_columns
+        self._signal_update.connect(self._update_table_slot)
 
     def data(self, index, role):
         if role == qtc.Qt.DisplayRole:
@@ -312,6 +315,10 @@ class TableModel(qtc.QAbstractTableModel):
                 return str(section + 1) if self.numbering == 'ascending' else str(self.rowCount() - section)
 
     def update_table(self):
+        self._signal_update.emit()
+
+    @qtc.pyqtSlot()
+    def _update_table_slot(self):
         self.layoutChanged.emit()
         if self.resize_columns:
             self.table_view.resizeColumnsToContents()
@@ -319,7 +326,7 @@ class TableModel(qtc.QAbstractTableModel):
     def export(self, filename=None, allow_excel_export=True):
         extensions = 'CSV File (*.csv);;Excel File (*.xlsx)' if allow_excel_export else 'CSV File (*.csv)'
         if not isinstance(filename, (str, Path)):
-            filename, _ = qtw.QFileDialog.getSaveFileName(None, "Select the file to save to…", self.last_save_path, extensions)
+            filename, _ = qtw.QFileDialog.getSaveFileName(self.table_view, "Select the file to save to…", self.last_save_path, extensions)
         if filename == '':
             return
         if filename[-3:] == 'csv':
