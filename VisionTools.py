@@ -856,6 +856,7 @@ def imread(image_path, enforce_grayscale=False, use_npy_file=False):
     image = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE if enforce_grayscale else None)
     if use_npy_file:
         np.save(npy_path, image)
+    return image
 
 
 def rgb_like(image, color="red"):
