@@ -11,6 +11,10 @@ except ImportError:
     import VisionTools as vt
 
 
+def get_camera_names():
+    return [c.GetModelName() for c in pylon.TlFactory.GetInstance().EnumerateDevices()]
+
+
 class CameraWrapper:
 
     def __init__(self, exposure_time_us=None, setup_for_streaming=False, enable_jumbo_frame=False):
