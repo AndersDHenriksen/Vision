@@ -22,6 +22,7 @@ class CameraWrapper:
             # self.camera.GevSCPD.SetValue(1000)
             # self.camera.GevSCFTD.SetValue(1000)
         if exposure_time_us is not None:
+            self.camera.ExposureAuto = 'Off'
             try:
                 self.camera.ExposureTimeAbs = exposure_time_us
             except:
