@@ -283,6 +283,7 @@ class TableModel(qtc.QAbstractTableModel):
         self.table_view = table_view
         self.table_view.setModel(self)
         self.resize_columns = resize_columns
+        self.min_column_width = self.table_view.columnWidth(0)
         self._signal_update.connect(self._update_table_slot)
 
     def data(self, index, role):
@@ -322,6 +323,7 @@ class TableModel(qtc.QAbstractTableModel):
         self.layoutChanged.emit()
         if self.resize_columns:
             self.table_view.resizeColumnsToContents()
+            self.table_view.horizontalHeader().setMinimumSectionSize(self.min_column_width)
 
     def export(self, filename=None, allow_excel_export=True):
         extensions = 'CSV File (*.csv);;Excel File (*.xlsx)' if allow_excel_export else 'CSV File (*.csv)'
