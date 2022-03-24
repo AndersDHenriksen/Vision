@@ -130,7 +130,7 @@ class CheckerboardCalibrator:
         corners_found, corners = cv2.findChessboardCorners(image, (cx, cy), cv2.CALIB_CB_ADAPTIVE_THRESH)
         if not corners_found:
             raise Exception("Calibration failed.")
-        # vt.showimg(avt.draw_points_on_image(img, np.squeeze(corners)))
+        # vt.showimg(avt.draw_points_on_image(image, np.squeeze(corners)))  # import AdvancedVisionTools as avt
 
         # Refine corners. This doesn't do much actually
         criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 50, 0.01)
@@ -154,7 +154,7 @@ class CheckerboardCalibrator:
             corners = cv2.perspectiveTransform(corners[:, None, :], self.PerspectiveTransform)
 
         if square_side_length:
-            corners_grid = corners.reshape((cx, cy, 2))
+            corners_grid = corners.reshape((cy, cx, 2))
             side_length_x = np.linalg.norm(np.diff(corners_grid, axis=0), axis=-1).mean()
             side_length_y = np.linalg.norm(np.diff(corners_grid, axis=1), axis=-1).mean()
             self.PixelsPerMm = (side_length_x / 2 + side_length_y / 2) / square_side_length
@@ -200,3 +200,5 @@ class CheckerboardCalibrator:
 if __name__ == '__main__':
     cam = CameraWrapper()
     cam.live_view()
+    # calibrator = CheckerboardCalibrator()
+    # calibrator.calibrate_from_checkerboard(cv2.imread(r"calibration_board.png", cv2.IMREAD_GRAYSCALE), True, 10)
