@@ -179,7 +179,7 @@ def bw_area_filter(mask, n=1, area_range=(0, np.inf), output='mask'):
     areas = stats[:, cv2.CC_STAT_AREA][1:]
     inside_range_idx = np.flatnonzero((areas >= area_range[0]) & (areas <= area_range[1]))
     areas = areas[inside_range_idx]
-    keep_idx = np.argsort(areas)[::-1][0:n]
+    keep_idx = np.argsort(areas)[::-1][0:int(n)]
     keep_areas = areas[keep_idx]
     if np.size(keep_areas) == 0:
         keep_areas = np.array([0])
