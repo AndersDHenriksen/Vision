@@ -135,6 +135,7 @@ class CheckerboardCalibrator:
         # Refine corners. This doesn't do much actually
         criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 50, 0.01)
         corners = cv2.cornerSubPix(image, corners, (11, 11), (-1, -1), criteria)
+        corners_grid = corners.reshape((cy, cx, 2))
 
         # Calculate camera calibration
         corners = np.squeeze(corners)
@@ -145,10 +146,10 @@ class CheckerboardCalibrator:
 
         if do_perspective_transform:
             img_4corners = np.vstack((corners[0], corners[cx - 1], corners[-cx], corners[-1]))
-            calib_w, calib_h = np.linalg.norm(corners[0] - corners[cx - 1]), np.linalg.norm(corners[0] - corners[-cx])
-            calib_c = (corners[0] + corners[-1]) / 2
+            calib_w = np.linalg.norm(corners_grid[:, -1] - corners_grid[:, 0], axis=1).mean()
+            calib_h = calib_w * (cy - 1) / (cx - 1)  # Ensure squares have equal x,y side lengths
             obj_4corners = np.array([(-calib_w / 2, -calib_h / 2), (calib_w / 2, -calib_h / 2),
-                                     (-calib_w / 2, calib_h / 2), (calib_w / 2, calib_h / 2)], dtype=np.float32) + calib_c
+                                     (-calib_w / 2, calib_h / 2), (calib_w / 2, calib_h / 2)], dtype=np.float32) + corners.mean(axis=0)
             # get the perspective transformation matrix (extrinsic)
             self.PerspectiveTransform = cv2.getPerspectiveTransform(img_4corners, obj_4corners)
             corners = cv2.perspectiveTransform(corners[:, None, :], self.PerspectiveTransform)
