@@ -214,7 +214,7 @@ def bw_convexhull(mask):
     :param mask: Input binary mask
     :type mask: np.core.multiarray.ndarray
     :return: Convex hull of input mask
-    :rtype mask: np.core.multiarray.ndarray
+    :rtype: np.core.multiarray.ndarray
     """
     mask_out = mask.astype(np.uint8)
     contours, hierarchy = cv2.findContours(mask.astype(np.uint8), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -225,6 +225,38 @@ def bw_convexhull(mask):
         hull.append(cv2.convexHull(contour, False))
     cv2.drawContours(mask_out, hull, contourIdx=-1, color=(255), thickness=-1)
     return mask_out.astype(np.bool)
+
+
+def bw_local_convexhull(bw_image, window):
+    """
+    Similar to convexhull, but prevent large edges like for a L-shape by breaking the edge into smaller independent
+    regions. The window parameter determine this region size.
+    :param bw_image: Input binary mask
+    :type bw_image: np.core.multiarray.ndarray
+    :param window: Window size to do
+    :type window: Union[int, float]
+    :return: Local convex hull of input mask
+    :rtype: np.core.multiarray.ndarray
+    """
+    bw_improved = bw_image.copy()
+    edge_mask = bw_edge(bw_image)
+    edge_ij = np.argwhere(edge_mask)
+    need_investigation = np.ones(edge_ij.shape[0], bool)
+    sides = intr(np.array([window, window]))
+    while need_investigation.any():
+        investigation_ij = edge_ij[find(need_investigation)[0]]
+        need_investigation[np.linalg.norm(edge_ij - investigation_ij, axis=1) < window / 6] = False
+
+        investigation_ij[0] = max(0, investigation_ij[0] - sides[0] // 2)
+        investigation_ij[1] = max(0, investigation_ij[1] - sides[1] // 2)
+        investigation_ij = intr(investigation_ij)
+        i = [investigation_ij[0], investigation_ij[0] + sides[0]]
+        j = [investigation_ij[1], investigation_ij[1] + sides[1]]
+        bw_crop = bw_image[i[0]: i[1], j[0]: j[1], ...]
+
+        bw_improved[i[0]: i[1], j[0]: j[1], ...] = bw_improved[i[0]: i[1], j[0]: j[1], ...] | bw_convexhull(bw_crop)
+
+    return bw_improved  # vt.showimg(bw_improved, bw_image)
 
 
 def bw_clear_border(mask):
