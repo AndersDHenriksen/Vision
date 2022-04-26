@@ -790,6 +790,11 @@ def match_template(image, template, method=cv2.TM_CCOEFF_NORMED, mask=None):
     return cv2.copyMakeBorder(mt_out, th//2, th - th//2 - 1, tw//2, tw - tw//2 - 1, cv2.BORDER_REPLICATE)
 
 
+def count(mask, axis=None):
+    """ Wrapper for np.count_nonzero() """
+    return np.count_nonzero(mask, axis=axis)
+
+
 def unit_vector(vector):
     """ Returns the unit vector of the vector. """
     return np.array(vector) / np.linalg.norm(vector)
