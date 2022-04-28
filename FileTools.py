@@ -1,3 +1,4 @@
+import string
 import shutil
 from distutils.dir_util import copy_tree
 from pathlib import Path
@@ -5,6 +6,14 @@ import urllib.request
 import zipfile
 import tarfile
 import cv2
+
+
+def make_filename_safe(filename_string):
+    """
+    Take a string with potentail /;$... chars and remove those that cannot be used in file names.
+    """
+    safechars = string.ascii_lowercase + string.ascii_uppercase + string.digits + '_- '
+    return ''.join([c for c in filename_string if c in safechars])
 
 
 def write_string_to_file(file_name, text_string):
