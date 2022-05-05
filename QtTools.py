@@ -331,9 +331,9 @@ class TableModel(qtc.QAbstractTableModel):
             filename, _ = qtw.QFileDialog.getSaveFileName(self.table_view, "Select the file to save to…", self.last_save_path, extensions)
         if filename == '':
             return
+        self.last_save_path = str(Path(filename).parent)
         if filename[-3:] == 'csv':
             import numpy as np
-            self.last_save_path = str(Path(filename).parent)
             np.savetxt(filename, self._data, fmt='%s', delimiter=', ', header=", ".join(self.header_list))
         elif filename[-4:] == 'xlsx':
             from openpyxl import Workbook
