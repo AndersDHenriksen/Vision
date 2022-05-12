@@ -347,6 +347,7 @@ class TableModel(qtc.QAbstractTableModel):
 
 class ImageViewer(qtw.QGraphicsView):
     imageClicked = qtc.pyqtSignal(qtc.QPoint)
+    _signal_update = qtc.pyqtSignal(bool)
 
     def __init__(self, parent, use_fast_zoom=False):
         super(ImageViewer, self).__init__(parent)
@@ -364,6 +365,7 @@ class ImageViewer(qtw.QGraphicsView):
         self.setHorizontalScrollBarPolicy(qtc.Qt.ScrollBarAlwaysOff)
         self.setBackgroundBrush(qtg.QBrush(qtg.QColor(30, 30, 30)))
         self.setFrameShape(qtw.QFrame.NoFrame)
+        self._signal_update.connect(self._update_scale_slot)
 
     def _update_scale_quality(self, do_zoom_in=True):
         if self._zoom > self._max_zoom + do_zoom_in:
@@ -386,12 +388,16 @@ class ImageViewer(qtw.QGraphicsView):
         factor = min(self.size().width() / self.media.size().width(), self.size().height() / self.media.size().height())
         self.scale(factor, factor)
 
-    def _update_scale(self, do_zoom_in=True):
+    @qtc.pyqtSlot(bool)
+    def _update_scale_slot(self, do_zoom_in=True):
         if self.media is None:
             return
         self._update_scale_fast(do_zoom_in) if self.use_fast_zoom else self._update_scale_quality(do_zoom_in)
 
-    def setImage(self, pixmap=None):  # TODO maybe problematic if not from main thread
+    def _update_scale(self, do_zoom_in=True):
+        self._signal_update.emit(do_zoom_in)
+
+    def setImage(self, pixmap=None):
         self._zoom = 0
         if isinstance(pixmap, np.ndarray):
             pixmap = qtg.QImage(pixmap.data, pixmap.shape[1], pixmap.shape[0], qtg.QImage.Format_Grayscale8 if pixmap.ndim == 2 else qtg.QImage.Format_RGB888)
