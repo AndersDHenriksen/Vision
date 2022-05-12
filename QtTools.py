@@ -3,6 +3,7 @@ import logging
 import functools
 from pathlib import Path
 from logging.handlers import RotatingFileHandler
+import numpy as np
 
 from PyQt5 import QtWidgets as qtw
 from PyQt5 import QtGui as qtg
@@ -342,3 +343,76 @@ class TableModel(qtc.QAbstractTableModel):
             [ws1.append(d) for d in [self.header_list] + self._data]
             wb.save(filename)
         return filename
+
+
+class ImageViewer(qtw.QGraphicsView):
+    imageClicked = qtc.pyqtSignal(qtc.QPoint)
+
+    def __init__(self, parent, use_fast_zoom=False):
+        super(ImageViewer, self).__init__(parent)
+        self.media = None
+        self.use_fast_zoom = use_fast_zoom
+        self._zoom = 0
+        self._max_zoom = 0
+        self._scene = qtw.QGraphicsScene(self)
+        self._image = qtw.QGraphicsPixmapItem()
+        self._scene.addItem(self._image)
+        self.setScene(self._scene)
+        self.setTransformationAnchor(qtw.QGraphicsView.AnchorUnderMouse)
+        self.setResizeAnchor(qtw.QGraphicsView.AnchorUnderMouse)
+        self.setVerticalScrollBarPolicy(qtc.Qt.ScrollBarAlwaysOff)
+        self.setHorizontalScrollBarPolicy(qtc.Qt.ScrollBarAlwaysOff)
+        self.setBackgroundBrush(qtg.QBrush(qtg.QColor(30, 30, 30)))
+        self.setFrameShape(qtw.QFrame.NoFrame)
+
+    def _update_scale_quality(self, do_zoom_in=True):
+        if self._zoom > self._max_zoom + do_zoom_in:
+            return self.scale(1.25, 1.25) if do_zoom_in else self.scale(0.8, 0.8)
+
+        center_point = self.mapToScene(self.size().width()//2, self.size().height()//2) * (1.25 if do_zoom_in else 0.8)
+        resize_to = qtc.QSizeF(self.size() * 1.25 ** self._zoom).toSize()
+        self._image.setPixmap(self.media.scaled(resize_to, qtc.Qt.KeepAspectRatio, qtc.Qt.SmoothTransformation))
+
+        rect = qtc.QRectF(self._image.pixmap().rect())
+        self.setSceneRect(rect)
+        self.centerOn(center_point)
+
+    def _update_scale_fast(self, do_zoom_in=True):
+        if self._zoom > 0:
+            return self.scale(1.25, 1.25) if do_zoom_in else self.scale(0.8, 0.8)
+
+        self.resetTransform()
+        self._image.setPixmap(self.media)
+        factor = min(self.size().width() / self.media.size().width(), self.size().height() / self.media.size().height())
+        self.scale(factor, factor)
+
+    def _update_scale(self, do_zoom_in=True):
+        if self.media is None:
+            return
+        self._update_scale_fast(do_zoom_in) if self.use_fast_zoom else self._update_scale_quality(do_zoom_in)
+
+    def setImage(self, pixmap=None):  # TODO maybe problematic if not from main thread
+        self._zoom = 0
+        if isinstance(pixmap, np.ndarray):
+            pixmap = qtg.QImage(pixmap.data, pixmap.shape[1], pixmap.shape[0], qtg.QImage.Format_Grayscale8 if pixmap.ndim == 2 else qtg.QImage.Format_RGB888)
+        if isinstance(pixmap, qtg.QImage):
+            pixmap = qtg.QPixmap.fromImage(pixmap)
+
+        self.media = pixmap
+        self.setDragMode(qtw.QGraphicsView.NoDrag if pixmap is None or pixmap.isNull() else qtw.QGraphicsView.ScrollHandDrag)
+        self._max_zoom = round(min(self.media.size().width() / self.size().width() / 1.25, self.media.size().height() / self.size().height() / 1.25))
+        self._update_scale()
+
+    def wheelEvent(self, event):
+        do_zoom_in = event.angleDelta().y() > 0
+        self._zoom += 1 if do_zoom_in else -1
+        if self.media is None or self._zoom < 0:
+            self._zoom = 0
+            return
+        # self.centerOn(self.mapToScene(event.x(), event.y()))  # Zoom on cursor
+        self._update_scale(do_zoom_in)
+
+    def mousePressEvent(self, event):
+        if self._image.isUnderMouse():
+            self.imageClicked.emit(self.mapToScene(event.pos()).toPoint())
+        super(ImageViewer, self).mousePressEvent(event)
