@@ -358,6 +358,13 @@ def argmax_nd(a):
 
 
 def uv_centroid(bw_image):
+    """
+    Calculate the uv coordinate of the mask's centroid (center of mass)
+    :param bw_image: Mask to find centroid position in
+    :type bw_image: np.core.multiarray.ndarray
+    :return: Centroid position
+    :rtype: np.core.multiarray.ndarray
+    """
     M = cv2.moments(bw_image.astype(np.uint8))
     uv = intr(np.array([M["m10"], M["m01"]]) / M["m00"])
     return uv
@@ -393,12 +400,15 @@ def r_coordinates(matrix, unit_scale=False, also_return_angle=False):
     :return: Radius matrix
     :rtype: np.core.multiarray.ndarray
     """
-    u_c, v_c = uv_coordinates(matrix, center_origin=True)
+    i_c, j_c = np.arange(matrix.shape[0]).astype(float), np.arange(matrix.shape[1]).astype(float)
     if unit_scale:
-        u_c, v_c = 2 * u_c / (matrix.shape[1] - 1), 2 * v_c / (matrix.shape[0] - 1)
+        i_c, j_c = 2 * i_c / (matrix.shape[0] - 1), 2 * j_c / (matrix.shape[1] - 1)
+    i_c, j_c = i_c - i_c.mean(), j_c - j_c.mean()
+    i2, j2 = i_c**2, j_c**2
+    r2 = i2[:, None] + j2[None]
     if also_return_angle:
-        return np.sqrt(u_c ** 2 + v_c ** 2), np.arctan2(v_c, u_c)
-    return np.sqrt(u_c ** 2 + v_c ** 2)
+        return np.sqrt(r2), np.arctan2(i_c[:, None], j_c[None])
+    return np.sqrt(r2)
 
 
 def simple_rotate(image, angle, out='rot_image'):
@@ -441,6 +451,30 @@ def simple_rotate(image, angle, out='rot_image'):
     if 'rot_image' in out:
         output.append(rotate_function(image))
     return output if len(output) > 1 else output[0]
+
+
+def bw_circle_mask(image_shape, position_uv, radius, use_expensive=False):
+    """
+    Make a circular mask at a given position. The circle needs to be inside mask.
+    :param image_shape: Size of output mask
+    :type image_shape: Union[list, tuple, np.core.multiarray.ndarray]
+    :param position_uv: Position of circle center
+    :type position_uv: Union[list, tuple, np.core.multiarray.ndarray]
+    :param radius: Radius of the circle
+    :type radius: Union[int, float]
+    :param use_expensive: Whether to use expensive calculation or OpenCV circular structural element
+    :type use_expensive: bool
+    :return: Mask with a single filled circle on and false elsewhere.
+    :rtype: np.core.multiarray.ndarray
+    """
+    diameter = intr(radius) * 2 + 1
+    if use_expensive:
+        k_round = r_coordinates(np.zeros((diameter, diameter), bool)) < radius
+    else:
+        k_round = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (diameter, diameter)) > 0
+    circle_mask = np.zeros(image_shape, bool)
+    image_crop(circle_mask, position_uv, (diameter, diameter), True, 'uv', assign=k_round)
+    return circle_mask
 
 
 def image_crop(image, point, sides, is_point_center=False, indexing='ij', assign=None):
