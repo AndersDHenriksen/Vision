@@ -467,13 +467,19 @@ def bw_circle_mask(image_shape, position_uv, radius, use_expensive=False):
     :return: Mask with a single filled circle on and false elsewhere.
     :rtype: np.core.multiarray.ndarray
     """
-    diameter = intr(radius) * 2 + 1
+    radius, position_uv = intr(radius), intr(position_uv)
+    diameter = radius * 2 + 1
     if use_expensive:
         k_round = r_coordinates(np.zeros((diameter, diameter), bool)) < radius
     else:
         k_round = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (diameter, diameter)) > 0
     circle_mask = np.zeros(image_shape, bool)
-    image_crop(circle_mask, position_uv, (diameter, diameter), True, 'uv', assign=k_round)
+
+    i_begin, i_end = position_uv[1] - radius, position_uv[1] + radius
+    j_begin, j_end = position_uv[0] - radius, position_uv[0] + radius
+    k_crop = k_round[max(0, -i_begin):diameter - max(0, i_end - image_shape[0] + 1),
+                     max(0, -j_begin):diameter - max(0, j_end - image_shape[1] + 1)]
+    circle_mask[max(0, i_begin):min(image_shape[0], i_end + 1), max(0, j_begin):min(image_shape[1], j_end + 1)] = k_crop
     return circle_mask
 
 
