@@ -407,6 +407,7 @@ class ImageViewer(qtw.QGraphicsView):
         self.media = pixmap
         self.setDragMode(qtw.QGraphicsView.NoDrag if pixmap is None or pixmap.isNull() else qtw.QGraphicsView.ScrollHandDrag)
         self._max_zoom = round(min(self.media.size().width() / self.size().width() / 1.25, self.media.size().height() / self.size().height() / 1.25))
+        self.resetTransform()
         self._update_scale()
 
     def wheelEvent(self, event):
