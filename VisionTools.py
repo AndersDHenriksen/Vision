@@ -296,6 +296,8 @@ def bw_left_and_right_edge(bw_image):
     # assert bw_image.size and bw_image.any(axis=1).all()
     bw_image = bw_edge(bw_image, True)
     us_vs = cv2.findNonZero(bw_image.astype(np.uint8))
+    if us_vs is None:
+        raise Exception("Mask is empty")
     us, vs = us_vs[:, 0, 0], us_vs[:, 0, 1]
     is_line_shift = np.diff(vs) > 0
     right_edge = us[np.append(is_line_shift, True)]
