@@ -136,9 +136,15 @@ class CheckerboardCalibrator:
         criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 50, 0.01)
         corners = cv2.cornerSubPix(image, corners, (11, 11), (-1, -1), criteria)
         corners_grid = corners.reshape((cy, cx, 2))
+        corners = np.squeeze(corners)
+
+        # Make sure corners are in correct order
+        d_corner = corners[1] - corners[0]
+        if d_corner[0] < d_corner[1]:
+            corners_grid = np.transpose(corners_grid, (1, 0, 2))[:, ::-1, :]
+            corners = corners_grid.reshape(corners.shape)
 
         # Calculate camera calibration
-        corners = np.squeeze(corners)
         count_xy = np.arange(cx * cy)
         object_points = np.dstack((count_xy % cx, count_xy // cx, np.zeros_like(count_xy))).astype(np.float32)
         ret, self.CameraMatrix, self.DistortionCoefficients, rvecs, tvecs = cv2.calibrateCamera(object_points, corners[None, ...], (w, h), None, None)
