@@ -98,7 +98,8 @@ class SetupLogger(qtc.QObject):
 
     def __init__(self, log_q_text_edit=None, log_file_name=None):
         super().__init__()
-        logging.basicConfig(stream=sys.stdout, level=logging.DEBUG, format='%(asctime)s | %(levelname)5s | %(message)s')
+        logging.basicConfig(stream=sys.stdout, level=logging.DEBUG, datefmt="%Y-%m-%d %H:%M:%S",
+                            format='%(asctime)s.%(msecs)03d | %(levelname)5s | %(message)s')
         self.logger = logging.getLogger()
         self.log_out = log_q_text_edit
         self.log_out.setFont(qtg.QFontDatabase.systemFont(qtg.QFontDatabase.FixedFont))
