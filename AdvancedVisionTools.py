@@ -447,5 +447,60 @@ def tesseract_ocr(image_bgr, is_digit=False):
     return pytesseract.image_to_string(image_bgr, config='digits --psm 7' if is_digit else '--psm 7')  # Maybe add: --oem 3
 
 
+class OutlineComparer:
+    def __init__(self, training_mask):
+        """
+        Create object for comparing blobs/connected components outlines, meaning if same geometrical outline, including
+        rotation, then the outline distance will be small.
+        :param training_mask: Binary mask with a single blob to use as the reference/training object.
+        :type training_mask: np.ndarray
+        """
+        self.compare_angle = None  # This will hold the angle between reference and compared blobs
+        self._centroid_vectors = None
+        self.ref_curve = self._calc_dist_curve(training_mask)
+        self._ref_angle = np.arctan2(*self._centroid_vectors[0])
+
+    def outline_distance(self, query_mask):
+        """
+        Compare query blob to reference blob in terms of average contour distance. Further, an approximate angle
+        difference is determined.
+        :param query_mask: Binary mask with a single blob to compare against reference blob
+        :type query_mask: np.ndarray
+        :return: The average pixel distance between query blob and reference blob
+        :rtype: float
+        """
+        input_curve = self._calc_dist_curve(query_mask)
+        cost_landscape = np.abs(self.ref_curve[:, None] - input_curve[None, :])
+
+        # Walk around both shapes in constant tempo
+        n_eval = min(500, self.ref_curve.size, input_curve.size)
+        ref_idx = vt.intr(np.linspace(0, self.ref_curve.size - 1, n_eval))  # cost_landscape: i
+        new_idx = vt.intr(np.linspace(0, input_curve.size - 1, n_eval))  # cost_landscape: j
+        new_offsets = vt.intr(np.linspace(0, input_curve.size - 1, 101))[:-1]
+        new_idx_all = (new_idx[:, None] + new_offsets[None, :]) % input_curve.size
+        mean_dist = cost_landscape[ref_idx[:, None], new_idx_all].mean(axis=0)
+
+        self.compare_angle = self._ref_angle - np.arctan2(*self._centroid_vectors[new_offsets[mean_dist.argmin()]])
+        return mean_dist.min()
+
+    def _calc_dist_curve(self, mask):
+        """
+        Calculate the distance from mask centroid to each contour pixel.
+        :param mask: Binary mask with a single blob to calculate distance curve for
+        :type mask: np.ndarray
+        :return: Distance curve.
+        :rtype: np.ndarray
+        """
+        areas_num, labels, stats, centroids = cv2.connectedComponentsWithStats(mask.astype(np.uint8))
+        assert areas_num == 2, "Multiple blobs in mask"
+        # cv2.RETR_EXTERNAL # for only external contour. CHAIN_APPROX_NONE for all, but not starting from same point
+        # RETR: https://docs.opencv.org/4.x/d3/dc0/group__imgproc__shape.html#ga819779b9857cc2f8601e6526a3a5bc71
+        contours, hierarchy = cv2.findContours(mask.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        contour = np.squeeze(np.vstack(contours))
+        centroid_uv = vt.uv_centroid(mask)
+        self._centroid_vectors = contour - centroid_uv
+        return np.linalg.norm(self._centroid_vectors, axis=1)
+
+
 if __name__ == "__main__":
     pass
