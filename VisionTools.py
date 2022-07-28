@@ -149,6 +149,65 @@ def bw_reconstruct(marker, mask):
     return out_mask
 
 
+def im_reconstruct(marker, mask, radius=1):
+    """
+    Grayscale reconstruction by dilation of marker image byt not exceeding mask image.
+    :param marker: Original image to dilate
+    :type marker: np.ndarray
+    :param mask: Maximum allowed value
+    :type mask: np.ndarray
+    :param radius: Error margin to increase speeed. radius=1 gives no error.
+    :type radius: int
+    :return: reconstructed image
+    :rtype: np.ndarray
+    """
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (radius * 2 + 1,) * 2)
+    expanded = np.zeros_like(marker)
+    while True:
+        cv2.dilate(marker, kernel, dst=expanded)
+        cv2.min(expanded, mask, dst=expanded)
+        if (marker == expanded).all():  # Conclude when no change
+            return expanded.reshape(mask.shape)
+        marker = expanded.copy()
+
+
+def h_maxima(image, h):
+    """
+    Suppress local intensity spikes below certain threshold (h). Also works for curve (1d image).
+    :param image: Image to flatten/suppress peaks in.
+    :type image: np.ndarray
+    :param h: Threshold for how much to suppress peaks
+    :type h: int
+    :return: Flatten image
+    :rtype: np.ndarray
+    """
+    return im_reconstruct(cv2.subtract(image, h), image)
+
+
+def h_minima(image, h):
+    """
+    Elevate local intensity valleys above certain threshold (h).  Also works for curve (1d image).
+    :param image: Image to flatten/elevate valleys in.
+    :type image: np.ndarray
+    :param h: Threshold for how much to elevate peaks
+    :type h: int
+    :return: Flatten image
+    :rtype: np.ndarray
+    """
+    assert image.dtype == np.uint8, "Image is assumed to be uint8"
+    return 255 - h_maxima(255 - image, h)
+
+
+def local_maxima(image):
+    """ Find pixels (mask) with no higher neighbours """
+    return morph('dilate', image, (3, 3)) == image
+
+
+def local_minima(image):
+    """ Find pixels (mask) with no lower neighbours """
+    return morph('erode', image, (3, 3)) == image
+
+
 def isin(labels, keep_list, areas_num):
     """
     Wrapper for np.isin that scales better for many blobs
