@@ -3,7 +3,7 @@ import numpy as np
 import cv2
 
 
-def morph(kind, image, strel_shape, strel_kind='rect'):
+def morph(kind, image, strel_shape, strel_kind='rect', inplace=False):
     """
     Wrapper for the different opencv morphology operations. Will also work on int/bool images and 1d vectors.
     :param kind: Which morpohological operation to perform. Possibilities are: 'erode', 'dilate', 'open', 'close',
@@ -16,6 +16,8 @@ def morph(kind, image, strel_shape, strel_kind='rect'):
     :param strel_kind: kernel / structural element type. Possibilities are: 'rect', 'cross', 'ellipse', 'circle_big',
     'circle_small'.
     :type strel_kind: str
+    :param inplace: Whether to do the operation inplace which can be faster. Requires uint8 or float image.
+    :type inplace: bool
     :return: Image after morphology operation.
     :rtype: np.core.multiarray.ndarray
     """
@@ -24,6 +26,9 @@ def morph(kind, image, strel_shape, strel_kind='rect'):
     is_image_bool = image.dtype == np.bool
     is_image_int = image.dtype == np.int
     is_image_1d = len(image.shape) == 1
+    if inplace:
+        assert not (is_image_bool or is_image_int or is_image_1d), \
+            "Cannot perform operation inplace on binary image etc. as OpenCV uses uint8"
     if not isinstance(strel_shape, tuple):
         strel_shape = tuple(strel_shape if hasattr(strel_shape, '__iter__') else [strel_shape])
 
@@ -42,12 +47,18 @@ def morph(kind, image, strel_shape, strel_kind='rect'):
         strel_types = {'rect': cv2.MORPH_RECT, 'cross': cv2.MORPH_CROSS, 'ellipse': cv2.MORPH_ELLIPSE}
         kernel = cv2.getStructuringElement(strel_types[strel_kind], strel_shape)
     if kind == 'erode':
+        if inplace:
+            return cv2.erode(image, kernel, dst=image)
         out = cv2.erode(image, kernel)
     elif kind == 'dilate':
+        if inplace:
+            return cv2.dilate(image, kernel, dst=image)
         out = cv2.dilate(image, kernel)
     else:
         op = {'open': cv2.MORPH_OPEN, 'close': cv2.MORPH_CLOSE, 'gradient': cv2.MORPH_GRADIENT,
               'tophat': cv2.MORPH_TOPHAT, 'whitehat': cv2.MORPH_TOPHAT, 'blackhat': cv2.MORPH_BLACKHAT}
+        if inplace:
+            return cv2.morphologyEx(image, op[kind], kernel, dst=image)
         out = cv2.morphologyEx(image, op[kind], kernel)
 
     if is_image_bool:
