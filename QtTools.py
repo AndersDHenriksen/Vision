@@ -401,7 +401,11 @@ class ImageViewer(qtw.QGraphicsView):
     def setImage(self, pixmap=None):
         self._zoom = 0
         if isinstance(pixmap, np.ndarray):
-            pixmap = qtg.QImage(pixmap.data, pixmap.shape[1], pixmap.shape[0], qtg.QImage.Format_Grayscale8 if pixmap.ndim == 2 else qtg.QImage.Format_RGB888)
+            h, w, *_ = pixmap.shape
+            if pixmap.ndim == 2:  # if problem here consider: https://pypi.org/project/qimage2ndarray/
+                pixmap = qtg.QImage(pixmap.data, w, h, bytesPerLine=w, format=qtg.QImage.Format_Grayscale8)
+            else:
+                pixmap = qtg.QImage(pixmap.data, w, h, bytesPerLine=3 * w, format=qtg.QImage.Format_RGB888)
         if isinstance(pixmap, qtg.QImage):
             pixmap = qtg.QPixmap.fromImage(pixmap)
 
