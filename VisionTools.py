@@ -3,7 +3,7 @@ import numpy as np
 import cv2
 
 
-def morph(kind, image, strel_shape, strel_kind='rect', inplace=False):
+def morph(kind, image, strel_shape_uv, strel_kind='rect', inplace=False):
     """
     Wrapper for the different opencv morphology operations. Will also work on int/bool images and 1d vectors.
     :param kind: Which morpohological operation to perform. Possibilities are: 'erode', 'dilate', 'open', 'close',
@@ -11,8 +11,8 @@ def morph(kind, image, strel_shape, strel_kind='rect', inplace=False):
     :type kind: str
     :param image: Source image to operate on.
     :type image: np.core.multiarray.ndarray
-    :param strel_shape: Shape of kernel / structural element.
-    :type strel_shape: Union[list, tuple, np.core.multiarray.ndarray, int]
+    :param strel_shape_uv: Shape of kernel / structural element.
+    :type strel_shape_uv: Union[list, tuple, np.core.multiarray.ndarray, int]
     :param strel_kind: kernel / structural element type. Possibilities are: 'rect', 'cross', 'ellipse', 'circle_big',
     'circle_small'.
     :type strel_kind: str
@@ -29,8 +29,8 @@ def morph(kind, image, strel_shape, strel_kind='rect', inplace=False):
     if inplace:
         assert not (is_image_bool or is_image_int or is_image_1d), \
             "Cannot perform operation inplace on binary image etc. as OpenCV uses uint8"
-    if not isinstance(strel_shape, tuple):
-        strel_shape = tuple(strel_shape if hasattr(strel_shape, '__iter__') else [strel_shape])
+    if not isinstance(strel_shape_uv, tuple):
+        strel_shape_uv = tuple(strel_shape_uv if hasattr(strel_shape_uv, '__iter__') else [strel_shape_uv])
 
     if is_image_bool:
         image = image.astype(np.uint8)
@@ -38,14 +38,14 @@ def morph(kind, image, strel_shape, strel_kind='rect', inplace=False):
         image = image.astype(np.float)
     if is_image_1d:
         image = image[:, np.newaxis]
-        if len(strel_shape) == 1:
-            strel_shape = (1, strel_shape[0])
+        if len(strel_shape_uv) == 1:
+            strel_shape_uv = (1, strel_shape_uv[0])
 
     if strel_kind in ['circle_big', 'circle_small']:
-        kernel = circular_structuring_element(strel_shape[0], strel_kind == 'circle_big')
+        kernel = circular_structuring_element(strel_shape_uv[0], strel_kind == 'circle_big')
     else:
         strel_types = {'rect': cv2.MORPH_RECT, 'cross': cv2.MORPH_CROSS, 'ellipse': cv2.MORPH_ELLIPSE}
-        kernel = cv2.getStructuringElement(strel_types[strel_kind], strel_shape)
+        kernel = cv2.getStructuringElement(strel_types[strel_kind], strel_shape_uv)
     if kind == 'erode':
         if inplace:
             return cv2.erode(image, kernel, dst=image)
