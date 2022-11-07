@@ -1,0 +1,9 @@
+<RCC>
+  <qresource prefix="images">
+    <file alias="ProInvent_logo.png">ProInvent_Logo_Transparent.png</file>
+    <file alias="Customer_logo.png">Customer_logo.png</file>
+  </qresource>
+  <qresource prefix="icons">
+    <file alias="Camera_icon.ico">CameraLogo_Transparent.ico</file>
+  </qresource>
+</RCC>
