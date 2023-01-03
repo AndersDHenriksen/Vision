@@ -17,7 +17,9 @@ def get_camera_names():
 
 class CameraWrapper:
 
-    def __init__(self, exposure_time_us=None, setup_for_streaming=False, enable_jumbo_frame=False):
+    def __init__(self, exposure_time_us=None, trigger_method='software', enable_jumbo_frame=False):
+        assert trigger_method in ['software', 'hardware', 'streaming']
+
         self.software_trigger = None
         self.camera = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateFirstDevice())
         self.camera.Open()
@@ -31,20 +33,28 @@ class CameraWrapper:
                 self.camera.ExposureTimeAbs = exposure_time_us
             except:
                 self.camera.ExposureTime = exposure_time_us
-        if setup_for_streaming:
+        if trigger_method == 'streaming':
             self.setup_for_streaming()
+        elif trigger_method == 'hardware':
+            self.setup_for_hardware_trigger()
         else:
-            self.setup_for_trigger()
+            self.setup_for_software_trigger()
         self.converter = None
         if self.camera.PixelFormat.Value == 'BayerRG8':
             self.converter = pylon.ImageFormatConverter()
             self.converter.OutputPixelFormat = pylon.PixelType_RGB8packed
 
-    def setup_for_trigger(self):
+    def setup_for_software_trigger(self):
         self.camera.TriggerSelector = "FrameStart"
         self.camera.TriggerMode = "On"
         self.camera.TriggerSource = "Software"
         self.software_trigger = True
+
+    def setup_for_hardware_trigger(self):
+        self.camera.TriggerSelector = "FrameStart"
+        self.camera.TriggerMode = "On"
+        self.camera.TriggerSource = "Line1"
+        self.software_trigger = False
 
     def setup_for_streaming(self):
         self.camera.TriggerMode = "Off"
