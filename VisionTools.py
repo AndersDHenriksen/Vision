@@ -897,6 +897,8 @@ def match_template(image, template, method=cv2.TM_CCOEFF_NORMED, mask=None):
         image = 255 * image.astype(np.uint8)
     if template.dtype == 'bool':
         template = 255 * template.astype(np.uint8)
+    if mask is not None and mask.dtype == 'bool':
+        mask = mask.astype(np.uint8)
     mt_out = cv2.matchTemplate(image, template, method, mask)
     th, tw = template.shape
     return cv2.copyMakeBorder(mt_out, th//2, th - th//2 - 1, tw//2, tw - tw//2 - 1, cv2.BORDER_REPLICATE)
