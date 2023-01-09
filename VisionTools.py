@@ -483,14 +483,14 @@ def r_coordinates(matrix, unit_scale=False, also_return_angle=False):
     return np.sqrt(r2)
 
 
-def simple_rotate(image, angle, out='rot_image'):
+def simple_rotate(image, angle_deg, out='rot_image'):
     """
     Rotate image without cropping it. Rotation is clockwise. simple_rotate can output multitple intermediates so
     "out" can be rot_matrix, rot_function, rot_image or tuple/list of these.
     :param image: Image to rotate
     :type image: np.core.multiarray.ndarray
-    :param angle: Angle to rotate
-    :type angle: float
+    :param angle_deg: Angle to rotate in degrees
+    :type angle_deg: float
     :param out: List (of strings) or string of what to output. Possibilities are:
                 rot_matrix, invert_matrix, rot_function, rot_image.
     :type out: Union[list, str]
@@ -504,7 +504,7 @@ def simple_rotate(image, angle, out='rot_image'):
     (cX, cY) = (w // 2, h // 2)
     # grab the rotation matrix (applying the negative of the angle to rotate clockwise), then grab the sine and cosine
     # (i.e., the rotation components of the matrix)
-    rotate_matrix = cv2.getRotationMatrix2D((cX, cY), -angle, 1.0)
+    rotate_matrix = cv2.getRotationMatrix2D((cX, cY), -angle_deg, 1.0)
     cos = np.abs(rotate_matrix[0, 0])
     sin = np.abs(rotate_matrix[0, 1])
     # compute the new bounding dimensions of the image
