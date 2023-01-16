@@ -23,8 +23,8 @@ def morph(kind, image, strel_shape_uv, strel_kind='rect', inplace=False):
     """
     assert kind in ['erode', 'dilate', 'open', 'close', 'gradient', 'tophat', 'whitehat', 'blackhat']
     assert strel_kind in ['rect', 'cross', 'ellipse', 'circle_big', 'circle_small']
-    is_image_bool = image.dtype == np.bool
-    is_image_int = image.dtype == np.int
+    is_image_bool = image.dtype == bool
+    is_image_int = image.dtype == int
     is_image_1d = len(image.shape) == 1
     if inplace:
         assert not (is_image_bool or is_image_int or is_image_1d), \
@@ -35,7 +35,7 @@ def morph(kind, image, strel_shape_uv, strel_kind='rect', inplace=False):
     if is_image_bool:
         image = image.astype(np.uint8)
     if is_image_int:
-        image = image.astype(np.float)
+        image = image.astype(float)
     if is_image_1d:
         image = image[:, np.newaxis]
         if len(strel_shape_uv) == 1:
@@ -62,7 +62,7 @@ def morph(kind, image, strel_shape_uv, strel_kind='rect', inplace=False):
         out = cv2.morphologyEx(image, op[kind], kernel)
 
     if is_image_bool:
-        out = out.astype(np.bool)
+        out = out.astype(bool)
     elif is_image_int:
         out = intr(out)
     if is_image_1d:
@@ -102,7 +102,7 @@ def bw_edge(mask, include_at_border=False):
     if include_at_border:
         edge_mask[:, [0, -1]] = mask[:, [0, -1]]
         edge_mask[[0, -1], :] = mask[[0, -1], :]
-    return edge_mask.astype(np.bool)
+    return edge_mask.astype(bool)
 
 
 def bw_edge_sorted(mask):
@@ -154,7 +154,7 @@ def bw_reconstruct(marker, mask):
     :rtype: np.core.multiarray.ndarray
     """
     areas_num, labels = cv2.connectedComponents(mask.astype(np.uint8))
-    labels_to_keep = np.unique(labels[marker.astype(np.bool)])
+    labels_to_keep = np.unique(labels[marker.astype(bool)])
     labels_to_keep = labels_to_keep[1:] if labels_to_keep.size and labels_to_keep[0] == 0 else labels_to_keep
     out_mask = isin(labels, labels_to_keep, areas_num)
     return out_mask
@@ -275,7 +275,7 @@ def bw_fill(mask):
     contours, hierarchy = cv2.findContours(mask.astype(np.uint8), cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
     for cnt in contours:
         cv2.drawContours(mask_out, [cnt], 0, 255, -1)
-    return mask_out.astype(np.bool)
+    return mask_out.astype(bool)
 
 
 def bw_convexhull(mask):
@@ -294,7 +294,7 @@ def bw_convexhull(mask):
     for contour in contours:
         hull.append(cv2.convexHull(contour, False))
     cv2.drawContours(mask_out, hull, contourIdx=-1, color=(255), thickness=-1)
-    return mask_out.astype(np.bool)
+    return mask_out.astype(bool)
 
 
 def bw_local_convexhull(bw_image, window):
@@ -400,9 +400,9 @@ def cc_masks(mask):
     :rtype: np.core.multiarray.ndarray
     """
     areas_num, labels = cv2.connectedComponents(mask.astype(np.uint8))
-    cc_stack = np.zeros((areas_num - 1, labels.shape[0], labels.shape[1]), np.bool)
+    cc_stack = np.zeros((areas_num - 1, labels.shape[0], labels.shape[1]), bool)
     i_cor, j_cor = np.meshgrid(np.arange(labels.shape[0]), np.arange(labels.shape[1]), indexing='ij')
-    mask = mask.astype(np.bool)
+    mask = mask.astype(bool)
     cc_stack[labels[mask] - 1, i_cor[mask], j_cor[mask]] = True
     return cc_stack, labels
 
@@ -805,7 +805,7 @@ def local_maximum(a, include_edge_maxima=False):
         return np.array([])
     dan_stops = dan[np.flatnonzero(np.append(np.diff(dan) > 1, True))] + 1
     next_idx = 0 if include_edge_maxima or da[0] > 0 else dan_stops[0]
-    is_dap_local_max = np.zeros(dap_stops.shape, np.bool)
+    is_dap_local_max = np.zeros(dap_stops.shape, bool)
     while next_idx < dap_stops[-1]:
         is_dap_local_max[find(dap_stops > next_idx)[0]] = True
         next_idx = dan_stops[dan_stops > next_idx][0] if dan_stops[-1] > next_idx else da.size
@@ -933,7 +933,7 @@ def intr(a):
     :rtype: Union[float, list, tuple, np.core.multiarray.ndarray]
     """
     if isinstance(a, np.ndarray):
-        return np.round(a).astype(np.int)
+        return np.round(a).astype(int)
     if isinstance(a, list):
         return [int(round(e)) for e in a]
     if isinstance(a, tuple):
@@ -958,9 +958,9 @@ def confusion_matrix(y_label, y_predict, label_for_print=None):
     :return: Confusion matrix as nparray
     :rtype: np.core.multiarray.ndarray
     """
-    y_label, y_predict = np.array(y_label).astype(np.int), np.array(y_predict).astype(np.int)
+    y_label, y_predict = np.array(y_label).astype(int), np.array(y_predict).astype(int)
     n_max = max(y_label.max(), y_predict.max()) + 1
-    cm = np.zeros((n_max, n_max), dtype=np.int)
+    cm = np.zeros((n_max, n_max), dtype=int)
     np.add.at(cm, (y_label, y_predict), 1)
     if label_for_print is not None:
         n_label = max(len(l) for l in label_for_print)
