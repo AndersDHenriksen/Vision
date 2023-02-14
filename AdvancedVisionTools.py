@@ -149,7 +149,7 @@ def draw_text_on_image(image, text, uv=(20, 50), font_face=cv2.FONT_HERSHEY_PLAI
 def draw_points_on_image(image, points_uv, point_size=15, color=(255, 0, 0), inplace=False):
     image_out = ensure_image_for_drawing(image, color, inplace)
     points_uv = vt.intr(np.array(points_uv))
-    skeleton_mask = np.zeros(image.shape[:2], np.bool)
+    skeleton_mask = np.zeros(image.shape[:2], bool)
     skeleton_mask[points_uv[:, 1], points_uv[:, 0]] = True
     skeleton_mask = vt.morph('dilate', skeleton_mask, (point_size, point_size), strel_kind='circle_big')
     image_out[skeleton_mask] = color
@@ -166,7 +166,7 @@ def draw_mask_on_image(image, mask, color=(255, 0, 0), dilate_r=0, inplace=False
 
 def ensure_image_for_drawing(image, color, inplace):
     converted = False
-    if image.dtype == np.bool:
+    if image.dtype == bool:
         image = 255 * image.astype(np.uint8)
         converted = True
     if image.ndim == 2 and np.array(color).ptp() > 0:
@@ -246,7 +246,7 @@ def minimum_path(begin_pt, end_pt, cost_matrix, step_size=1):
     :rtype: tuple
     """
     if cost_matrix.dtype == np.uint8:   # To prevent overflow
-        cost_matrix = cost_matrix.astype(np.int)
+        cost_matrix = cost_matrix.astype(int)
     inf = np.array([(cost_matrix.max() + 1) * cost_matrix.shape[1]], dtype=cost_matrix.dtype)
     infv = [np.tile(inf, i) for i in range(2 * step_size + 1)]
     inf0 = infv[step_size]
