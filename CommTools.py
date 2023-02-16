@@ -7,6 +7,8 @@ class EipComm:  # EthernetIP communication
         from pycomm3 import LogixDriver
         self.ip = ip
         self.plc = LogixDriver(ip)
+        self.plc.open()
+        assert self.plc.connected, f"Could not connect to PLC on {ip}"
         self.running_monitors = {}
 
     def close(self):
