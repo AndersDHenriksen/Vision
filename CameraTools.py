@@ -39,6 +39,7 @@ class CameraWrapper:
             self.setup_for_hardware_trigger()
         else:
             self.setup_for_software_trigger()
+        self.camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly)  # pylon.GrabStrategy_OneByOne
         self.converter = None
         if self.camera.PixelFormat.Value == 'BayerRG8':
             self.converter = pylon.ImageFormatConverter()
@@ -61,8 +62,6 @@ class CameraWrapper:
         self.software_trigger = False
 
     def grab(self, wait_for_image=True):
-        if not self.camera.IsGrabbing():
-            self.camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly)
         if self.software_trigger:
             self.camera.ExecuteSoftwareTrigger()
         if not wait_for_image and not self.camera.GetGrabResultWaitObject().Wait(0):
