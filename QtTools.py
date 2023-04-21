@@ -5,14 +5,11 @@ from pathlib import Path
 from logging.handlers import RotatingFileHandler
 import numpy as np
 
-from PyQt5 import QtWidgets as qtw
-from PyQt5 import QtGui as qtg
-from PyQt5 import QtCore as qtc
+from PySide6 import QtWidgets as qtw
+from PySide6 import QtGui as qtg
+from PySide6 import QtCore as qtc
 
-try:
-    from pyqtspinner.spinner import WaitingSpinner  # pip install pyqtspinner
-except ImportError:
-    WaitingSpinner = object
+from .QtSpinner import WaitingSpinner
 
 
 WHITE =     qtg.QColor(255, 255, 255)
@@ -103,7 +100,7 @@ class SetupLogger(qtc.QObject):
         self.logger = logging.getLogger()
         self.log_out = log_q_text_edit
         self.log_out.setFont(qtg.QFontDatabase.systemFont(qtg.QFontDatabase.FixedFont))
-        self._text_field_stream = TextFieldStream()
+        self._text_field_stream = TextFieldStream(log_q_text_edit)
 
         # Set up log handler
         handlers = []
@@ -114,26 +111,20 @@ class SetupLogger(qtc.QObject):
         for handler in handlers:
             self.logger.addHandler(handler)
             self.logger.handlers[-1].setFormatter(self.logger.handlers[0].formatter)
-        # self._text_field_stream.text_arrived.connect(self.log_append_text)
-        self._text_field_stream.text_arrived.connect(lambda msg: self.log_append_text(msg))  # Lambda needed when no reference is kept
-
-    @qtc.pyqtSlot(str)
-    def log_append_text(self, msg):
-        self.log_out.setText(self.log_out.toPlainText() + msg + "\n")
-        self.log_out.moveCursor(qtg.QTextCursor.End)
 
 
 class TextFieldStream(qtc.QObject, logging.Handler):
-    text_arrived = qtc.pyqtSignal(str)
 
-    def __init__(self):
+    def __init__(self, log_out):
         qtc.QObject.__init__(self)
         logging.Handler.__init__(self)
+        self.log_out = log_out
 
     def emit(self, record):
         try:
             msg = self.format(record)
-            self.text_arrived.emit(msg)
+            self.log_out.setText(self.log_out.toPlainText() + msg + "\n")
+            self.log_out.moveCursor(qtg.QTextCursor.End)
         except Exception:
             self.handleError(record)
 
@@ -145,7 +136,7 @@ class TagMonitor(qtc.QObject):  # Designed with EthernetIP in mind
         self.tag = tag
         self.comm = comm
         self.python_class = python_class
-        self.change_signal = qtc.pyqtSignal(python_class)
+        self.change_signal = qtc.Signal(python_class)
         self.last_value = python_class(self.comm.read(self.tag))
         self.timer = qtc.QTimer()
         self.timer.setInterval(interval_ms)
@@ -160,7 +151,7 @@ class TagMonitor(qtc.QObject):  # Designed with EthernetIP in mind
 
 
 class Worker(qtc.QObject):
-    start_signal = qtc.pyqtSignal(tuple, dict)
+    start_signal = qtc.Signal(tuple, dict)
 
     def __init__(self, func, done_func=None, exception_func=print):
         super().__init__()
@@ -176,7 +167,7 @@ class Worker(qtc.QObject):
     def __call__(self, *args, **kwargs):
         self.start_signal.emit(args, kwargs)
 
-    @qtc.pyqtSlot(tuple, dict)
+    @qtc.Slot(tuple, dict)
     def _run(self, args, kwargs):
         try:
             self.result = self.func(*args, **kwargs)
@@ -188,8 +179,8 @@ class Worker(qtc.QObject):
 
 
 class OwnThread(qtc.QObject):
-    start_signal = qtc.pyqtSignal(tuple, dict)
-    done_signal = qtc.pyqtSignal()
+    start_signal = qtc.Signal(tuple, dict)
+    done_signal = qtc.Signal()
 
     def __init__(self, func, done_slot=None):
         super().__init__()
@@ -212,15 +203,15 @@ class OwnThread(qtc.QObject):
         self.instance_func = self.instance_func or instance
         return self
 
-    @qtc.pyqtSlot(tuple, dict)
+    @qtc.Slot(tuple, dict)
     def _run(self, args, kwargs):
         self.orig_func(self.instance_func, *args, **kwargs)
         self.done_signal.emit()
 
 
 class QTimer(qtc.QTimer):  # Timer that can be started/stopped from all threads
-    _signal_start = qtc.pyqtSignal()
-    _signal_stop = qtc.pyqtSignal()
+    _signal_start = qtc.Signal()
+    _signal_stop = qtc.Signal()
 
     def __init__(self, *args, timeout_call=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -229,11 +220,11 @@ class QTimer(qtc.QTimer):  # Timer that can be started/stopped from all threads
         if timeout_call:
             self.connect(timeout_call)
 
-    @qtc.pyqtSlot()
+    @qtc.Slot()
     def _start_slot(self):
         super().start()
 
-    @qtc.pyqtSlot()
+    @qtc.Slot()
     def _stop_slot(self):
         super().stop()
 
@@ -245,8 +236,8 @@ class QTimer(qtc.QTimer):  # Timer that can be started/stopped from all threads
 
 
 class QSpinner(WaitingSpinner):  # Spinner with new default values and that can be started/stopped from all threads
-    _signal_start = qtc.pyqtSignal()
-    _signal_stop = qtc.pyqtSignal()
+    _signal_start = qtc.Signal()
+    _signal_stop = qtc.Signal()
 
     def __init__(self, parent, center_on_parent=True, disable_parent_when_spinning=True,
                  modality=qtc.Qt.NonModal, roundness=100., fade=80., lines=20,
@@ -256,11 +247,11 @@ class QSpinner(WaitingSpinner):  # Spinner with new default values and that can 
         self._signal_start.connect(self._start_slot)
         self._signal_stop.connect(self._stop_slot)
 
-    @qtc.pyqtSlot()
+    @qtc.Slot()
     def _start_slot(self):
         super().start()
 
-    @qtc.pyqtSlot()
+    @qtc.Slot()
     def _stop_slot(self):
         super().stop()
 
@@ -272,7 +263,7 @@ class QSpinner(WaitingSpinner):  # Spinner with new default values and that can 
 
 
 class TableModel(qtc.QAbstractTableModel):
-    _signal_update = qtc.pyqtSignal()
+    _signal_update = qtc.Signal()
 
     def __init__(self, table_view, header_list, numbering='ascending', n_digits=2, resize_columns=False, data=None):
         assert numbering in [None, 'ascending', 'descending']
@@ -320,7 +311,7 @@ class TableModel(qtc.QAbstractTableModel):
     def update_table(self):
         self._signal_update.emit()
 
-    @qtc.pyqtSlot()
+    @qtc.Slot()
     def _update_table_slot(self):
         self.layoutChanged.emit()
         if self.resize_columns:
@@ -347,8 +338,8 @@ class TableModel(qtc.QAbstractTableModel):
 
 
 class ImageViewer(qtw.QGraphicsView):
-    imageClicked = qtc.pyqtSignal(qtc.QPoint)
-    _signal_update = qtc.pyqtSignal(bool)
+    imageClicked = qtc.Signal(qtc.QPoint)
+    _signal_update = qtc.Signal(bool)
 
     def __init__(self, parent, use_fast_zoom=False):
         super(ImageViewer, self).__init__(parent)
@@ -389,7 +380,7 @@ class ImageViewer(qtw.QGraphicsView):
         factor = min(self.size().width() / self.media.size().width(), self.size().height() / self.media.size().height())
         self.scale(factor, factor)
 
-    @qtc.pyqtSlot(bool)
+    @qtc.Slot(bool)
     def _update_scale_slot(self, do_zoom_in=True):
         if self.media is None:
             return

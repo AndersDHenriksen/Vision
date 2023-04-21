@@ -3,9 +3,9 @@ import configparser
 from pathlib import Path
 import numpy as np
 import cv2
-from PyQt5 import QtWidgets as qtw
-from PyQt5 import QtGui as qtg
-from PyQt5 import QtCore as qtc
+from PySide6 import QtWidgets as qtw
+from PySide6 import QtGui as qtg
+from PySide6 import QtCore as qtc
 from Vision import FlowTools as ft, CameraTools, QtTools, FileTools, VisionTools as vt
 from resources import visionui_resources as resources
 try:
@@ -51,7 +51,7 @@ class ConfigFile:
 
 
 class VisionUI(qtw.QMainWindow):
-    done_signal = qtc.pyqtSignal(tuple)
+    done_signal = qtc.Signal(tuple)
 
     def __init__(self):
         super().__init__()
@@ -176,7 +176,8 @@ class VisionUI(qtw.QMainWindow):
             self.logger.warning(f"Cannot connect to camera. Retrying in 5 secs. Error: {e}")
             qtc.QTimer.singleShot(5000, self.init_camera)
 
-    def run(self, state):
+    def run(self, state=None):
+        state = state or self.live_button.isChecked()
         self.live_button.setIcon(self.icon_stop if state else self.icon_run)
         self.live_button.setChecked(state)
         if state:
@@ -310,7 +311,9 @@ class VisionUI(qtw.QMainWindow):
             self.analyze_image(image_path=image_path)
 
     def closeEvent(self, event):
+        self.analyze_image.thread.quit()
         if self.cam:
+            self.update_image_timer.stop()
             self.cam.stop()
         event.accept()
 
@@ -319,7 +322,5 @@ if __name__ == '__main__':
     app = qtw.QApplication(sys.argv)
     ui = VisionUI()
     if ui.config.dark_mode:
-        QtTools.QDarkPalette(app=app)
-    else:
-        app.setStyle('Fusion')
+        QtTools.QDarkPalette(app=app)  # Alternative: app.setStyle('Fusion')
     sys.exit(app.exec())
