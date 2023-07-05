@@ -10,7 +10,7 @@ import cv2
 
 def make_filename_safe(filename_string):
     """
-    Take a string with potentail /;$... chars and remove those that cannot be used in file names.
+    Take a string with potential /;$... chars and remove those that cannot be used in file names.
     """
     safechars = string.ascii_lowercase + string.ascii_uppercase + string.digits + '_- '
     return ''.join([c for c in filename_string if c in safechars])
@@ -26,7 +26,7 @@ def write_string_to_file(file_name, text_string):
 
 def count_files(parent_folder, file_string, recursive=False):
     """
-    Get the number of files which matches the file_string, * allowed. Also useful to check file existence.
+    Get the number of files which matches the file_string, * allowed. Also, useful to check file existence.
     """
     if recursive:
         return len(list(Path(parent_folder).rglob(file_string)))
@@ -44,7 +44,7 @@ def limit_n_files(parent_folder, file_string, n_files):
 
 def download_url(url, output_path=None, do_unzip=True):
     """
-    Download a file from an URL.
+    Download a file from a URL.
     :param url: URL of file to download
     :type url: str
     :param output_path: Path to place downloaded file
@@ -111,8 +111,8 @@ def download_h264_codec():
     url = r"https://github.com/cisco/openh264/releases/download/v1.8.0/openh264-1.8.0-win64.dll.bz2"
     bz2_file = download_url(url)
     import bz2
-    with bz2.BZ2File(bz2_file) as zipfile:  # open the file
-        data = zipfile.read()  # get the decompressed data
+    with bz2.BZ2File(bz2_file) as zip_file:  # open the file
+        data = zip_file.read()  # get the decompressed data
     newfilepath = str(bz2_file)[:-4]  # assuming the filepath ends with .bz2
     open(newfilepath, 'wb').write(data)
     bz2_file.unlink()
