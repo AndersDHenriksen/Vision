@@ -1010,6 +1010,12 @@ def imread(image_path, enforce_grayscale=False, use_npy_file=False):
     return image
 
 
+def disable_quick_edit():
+    """ Disable console quick edit, preventing pause if console text is selected. Beware this will disable stdin. """
+    import ctypes
+    kernel32 = ctypes.windll.kernel32
+    kernel32.SetConsoleMode(kernel32.GetStdHandle(-10), 128)
+
 def rgb_like(image, color="red"):
     """
     Create a single color image with the same size as the input image.
