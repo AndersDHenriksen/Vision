@@ -190,4 +190,5 @@ Path.move_to_subfolder = _move_to_subfolder
 Path.delete = _delete
 
 if __name__ == "__main__":
+    # convert_images_in_folders(r"D:\DataMeasured", "*.png")
     pass
