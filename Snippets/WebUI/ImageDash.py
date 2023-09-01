@@ -61,7 +61,7 @@ def table_selection_changed(index):
 
 
 @callback(Output('raw-image', 'figure'), Input('data_store', 'data'))
-def get_image_fig(data_store=None):  # TODO investigate if all this code is needed
+def get_image_fig(data_store=None):
 
     data_store = data_store or {'image_path': data.latest_path()}
     image_path = data_store['image_path']
@@ -69,59 +69,22 @@ def get_image_fig(data_store=None):  # TODO investigate if all this code is need
         raise PreventUpdate
     image = Image.open(image_path)
 
-    # Create figure
     fig = go.Figure()
+    w, h = 1600, round(image.height * 1600 / image.width)
+    # image = image.resize((w, h))  # Enable resize if more responsive UI is desired
 
-    # Constants
-    img_width = image.width  # 1600
-    img_height = image.height  # 900
-    scale_factor = 1
-
-    # Add invisible scatter trace.
-    # This trace is added to help the autoresize logic work.
-    fig.add_trace(
-        go.Scatter(
-            x=[0, img_width * scale_factor],
-            y=[0, img_height * scale_factor],
-            mode="markers",
-            marker_opacity=0
-        )
-    )
+    # Add invisible scatter trace. This trace is added to help the autoresize logic work. Seems not to be needed.
+    # fig.add_trace(go.Scatter(x=[0, w], y=[0, h], mode="markers", opacity=0))
 
     # Configure axes
-    fig.update_xaxes(
-        visible=False,
-        range=[0, img_width * scale_factor]
-    )
-
-    fig.update_yaxes(
-        visible=False,
-        range=[0, img_height * scale_factor],
-        # the scaleanchor attribute ensures that the aspect ratio stays constant
-        scaleanchor="x"
-    )
+    fig.update_xaxes(visible=False, range=[0, w])
+    fig.update_yaxes(visible=False, range=[0, h], scaleanchor="x")  # scale anchor for constant aspect ratio
 
     # Add image
-    fig.add_layout_image(
-        dict(
-            x=0,
-            sizex=img_width * scale_factor,
-            y=img_height * scale_factor,
-            sizey=img_height * scale_factor,
-            xref="x",
-            yref="y",
-            opacity=1.0,
-            layer="below",
-            sizing="stretch",
-            source=image)
-    )
+    fig.add_layout_image(dict(x=0, sizex=w, y=h, sizey=h, xref="x", yref="y", source=image))
 
     # Configure other layout
-    fig.update_layout(
-        width=img_width * scale_factor,
-        height=img_height * scale_factor,
-        margin={"l": 0, "r": 0, "t": 0, "b": 0},
-    )
+    fig.update_layout(width=w, height=h, margin={"l": 0, "r": 0, "t": 0, "b": 0})
 
     # Disable the autosize on double click because it adds unwanted margins around the image
     # More detail: https://plotly.com/python/configuration-options/
@@ -146,7 +109,7 @@ table_view = dash_table.DataTable(data=data.filenames(),
                                   id='tbl', page_size=30, fill_width=True, style_cell={'textAlign': 'center'})
 latest_but = dbc.Button("Latest", id='latest_but', n_clicks=0, style={'width': '100%'})
 
-logo = html.Img(src='assets/ProInvent_Logo_Transparent.png', style={'height': 120, 'position':'absolute', 'top': '15px', 'left':'15px'})
+logo = html.Img(src='assets/ProInvent_Logo_Transparent.png', style={'height': 120, 'position': 'absolute', 'top': '15px', 'left': '15px'})
 
 app.layout = html.Div(children=[
     html.Div([
