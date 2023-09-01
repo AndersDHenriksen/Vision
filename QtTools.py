@@ -404,7 +404,8 @@ class ImageViewer(qtw.QGraphicsView):
 
         self.media = pixmap
         self.setDragMode(qtw.QGraphicsView.NoDrag if pixmap is None or pixmap.isNull() else qtw.QGraphicsView.ScrollHandDrag)
-        self._max_zoom = round(min(self.media.size().width() / self.size().width() / 1.25, self.media.size().height() / self.size().height() / 1.25))
+        self._max_zoom = round(max(np.log(self.media.size().width() / self.size().width())/np.log(1.25),
+                                   np.log(self.media.size().height() / self.size().height()) / np.log(1.25)))
         self.resetTransform()
         self._update_scale()
 
@@ -414,7 +415,7 @@ class ImageViewer(qtw.QGraphicsView):
         if self.media is None or self._zoom < 0:
             self._zoom = 0
             return
-        # self.centerOn(self.mapToScene(event.x(), event.y()))  # Zoom on cursor
+        # self.centerOn(self.mapToScene(event.position().x(), event.position().y()))  # Zoom on cursor
         self._update_scale(do_zoom_in)
 
     def mousePressEvent(self, event):
