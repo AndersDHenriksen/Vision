@@ -177,7 +177,7 @@ class VisionUI(qtw.QMainWindow):
             qtc.QTimer.singleShot(5000, self.init_camera)
 
     def run(self, state=None):
-        state = state or self.live_button.isChecked()
+        state = self.live_button.isChecked() if state is None else state
         self.live_button.setIcon(self.icon_stop if state else self.icon_run)
         self.live_button.setChecked(state)
         if state:
