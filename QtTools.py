@@ -276,6 +276,7 @@ class TableModel(qtc.QAbstractTableModel):
         self.table_view = table_view
         self.table_view.setModel(self)
         self.resize_columns = resize_columns
+        self.centered_columns = []
         self.min_column_width = self.table_view.columnWidth(0)
         self._signal_update.connect(self._update_table_slot)
 
@@ -283,6 +284,8 @@ class TableModel(qtc.QAbstractTableModel):
         if role == qtc.Qt.DisplayRole:
             data_point = self._data[index.row()][index.column()]
             return data_point if isinstance(data_point, str) else f"{data_point:.{self.n_digits}f}"
+        elif role == qtc.Qt.TextAlignmentRole and index.column() in self.centered_columns:
+            return qtc.Qt.AlignCenter
 
     def setData(self, index, value, role):
         if role == qtc.Qt.EditRole:
