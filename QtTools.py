@@ -382,9 +382,15 @@ class ImageViewer(qtw.QGraphicsView):
 
         self.media = pixmap
         self._image.setPixmap(self.media)
-        # self.setDragMode(qtw.QGraphicsView.NoDrag if pixmap is None or pixmap.isNull() else qtw.QGraphicsView.ScrollHandDrag)
-        self.setDragMode(qtw.QGraphicsView.NoDrag if pixmap is None or pixmap.isNull() else qtw.QGraphicsView.RubberBandDrag)
+        self.change_drag_mode(rubber_instead_of_scrolling=True)
         self.reset_zoom()
+
+    def change_drag_mode(self, rubber_instead_of_scrolling):
+        is_media_present = self.media is None or self.media.isNull()
+        if rubber_instead_of_scrolling:
+            self.setDragMode(qtw.QGraphicsView.NoDrag if is_media_present else qtw.QGraphicsView.RubberBandDrag)
+        else:
+            self.setDragMode(qtw.QGraphicsView.NoDrag if is_media_present else qtw.QGraphicsView.ScrollHandDrag)
 
     def wheelEvent(self, event):
         s = 1.25
@@ -411,11 +417,16 @@ class ImageViewer(qtw.QGraphicsView):
     def mousePressEvent(self, event):
         if self._image.isUnderMouse():
             self.imageClicked.emit(self.mapToScene(event.pos()).toPoint())
+        if event.button() == qtc.Qt.MouseButton.MiddleButton:
+            self.change_drag_mode(rubber_instead_of_scrolling=False)
+            event = qtg.QMouseEvent(qtc.QEvent.MouseButtonRelease, qtc.QPointF(event.pos()), qtc.Qt.LeftButton, event.buttons(), qtc.Qt.KeyboardModifiers())
         super(ImageViewer, self).mousePressEvent(event)
 
     def mouseReleaseEvent(self, event):
         if self.rubberBandRect().size():
             self.fitInView(self.mapToScene(self.rubberBandRect()).boundingRect(), qtc.Qt.KeepAspectRatio)
+        if event.button() == qtc.Qt.MouseButton.MiddleButton:
+            self.change_drag_mode(rubber_instead_of_scrolling=True)
         super(ImageViewer, self).mouseReleaseEvent(event)
 
     def mouseDoubleClickEvent(self, event):
