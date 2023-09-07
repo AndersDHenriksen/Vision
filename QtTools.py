@@ -342,58 +342,33 @@ class TableModel(qtc.QAbstractTableModel):
 
 class ImageViewer(qtw.QGraphicsView):
     imageClicked = qtc.Signal(qtc.QPoint)
-    _signal_update = qtc.Signal(bool)
 
-    def __init__(self, parent, use_fast_zoom=False):
+    def __init__(self, parent, scaling_method='normal'):
+        assert scaling_method in ['fast', 'normal', 'slow']
         super(ImageViewer, self).__init__(parent)
         self.media = None
-        self.use_fast_zoom = use_fast_zoom
-        self._zoom = 0
-        self._max_zoom = 0
+        self._min_scale = 0
+        self._current_scale = 0
         self._scene = qtw.QGraphicsScene(self)
         self._image = qtw.QGraphicsPixmapItem()
+        self.scaling_method = scaling_method
+        if scaling_method in ['normal', 'slow']:
+            self._image.setTransformationMode(qtc.Qt.SmoothTransformation)
         self._scene.addItem(self._image)
         self.setScene(self._scene)
-        self.setTransformationAnchor(qtw.QGraphicsView.AnchorUnderMouse)
+        self.setTransformationAnchor(qtw.QGraphicsView.AnchorUnderMouse)  # TODO is this needed?
         self.setResizeAnchor(qtw.QGraphicsView.AnchorUnderMouse)
         self.setVerticalScrollBarPolicy(qtc.Qt.ScrollBarAlwaysOff)
         self.setHorizontalScrollBarPolicy(qtc.Qt.ScrollBarAlwaysOff)
         self.setBackgroundBrush(qtg.QBrush(qtg.QColor(30, 30, 30)))
         self.setFrameShape(qtw.QFrame.NoFrame)
-        self._signal_update.connect(self._update_scale_slot)
 
-    def _update_scale_quality(self, do_zoom_in=True):
-        if self._zoom > self._max_zoom + do_zoom_in:
-            return self.scale(1.25, 1.25) if do_zoom_in else self.scale(0.8, 0.8)
-
-        center_point = self.mapToScene(self.size().width()//2, self.size().height()//2) * (1.25 if do_zoom_in else 0.8)
-        resize_to = qtc.QSizeF(self.size() * 1.25 ** self._zoom).toSize()
-        self._image.setPixmap(self.media.scaled(resize_to, qtc.Qt.KeepAspectRatio, qtc.Qt.SmoothTransformation))
-
-        rect = qtc.QRectF(self._image.pixmap().rect())
-        self.setSceneRect(rect)
-        self.centerOn(center_point)
-
-    def _update_scale_fast(self, do_zoom_in=True):
-        if self._zoom > 0:
-            return self.scale(1.25, 1.25) if do_zoom_in else self.scale(0.8, 0.8)
-
+    def reset_zoom(self):
         self.resetTransform()
-        self._image.setPixmap(self.media)
-        factor = min(self.size().width() / self.media.size().width(), self.size().height() / self.media.size().height())
-        self.scale(factor, factor)
-
-    @qtc.Slot(bool)
-    def _update_scale_slot(self, do_zoom_in=True):
-        if self.media is None:
-            return
-        self._update_scale_fast(do_zoom_in) if self.use_fast_zoom else self._update_scale_quality(do_zoom_in)
-
-    def _update_scale(self, do_zoom_in=True):
-        self._signal_update.emit(do_zoom_in)
+        self._min_scale = min(self.size().width() / self.media.size().width(), self.size().height() / self.media.size().height())
+        self.scale(self._min_scale, self._min_scale)
 
     def setImage(self, pixmap=None):
-        self._zoom = 0
         if isinstance(pixmap, np.ndarray):
             h, w, *_ = pixmap.shape
             if pixmap.ndim == 2:  # if problem here consider the slower: https://pypi.org/project/qimage2ndarray/
@@ -406,22 +381,43 @@ class ImageViewer(qtw.QGraphicsView):
             pixmap = qtg.QPixmap.fromImage(pixmap)
 
         self.media = pixmap
-        self.setDragMode(qtw.QGraphicsView.NoDrag if pixmap is None or pixmap.isNull() else qtw.QGraphicsView.ScrollHandDrag)
-        self._max_zoom = round(max(np.log(self.media.size().width() / self.size().width())/np.log(1.25),
-                                   np.log(self.media.size().height() / self.size().height()) / np.log(1.25)))
-        self.resetTransform()
-        self._update_scale()
+        self._image.setPixmap(self.media)
+        # self.setDragMode(qtw.QGraphicsView.NoDrag if pixmap is None or pixmap.isNull() else qtw.QGraphicsView.ScrollHandDrag)
+        self.setDragMode(qtw.QGraphicsView.NoDrag if pixmap is None or pixmap.isNull() else qtw.QGraphicsView.RubberBandDrag)
+        self.reset_zoom()
 
     def wheelEvent(self, event):
-        do_zoom_in = event.angleDelta().y() > 0
-        self._zoom += 1 if do_zoom_in else -1
-        if self.media is None or self._zoom < 0:
-            self._zoom = 0
-            return
+        s = 1.25
+        if event.angleDelta().y() < 0:  # zoom out
+            s = max(0.8, self._min_scale / self.transform().m11())
         # self.centerOn(self.mapToScene(event.position().x(), event.position().y()))  # Zoom on cursor
-        self._update_scale(do_zoom_in)
+        self.scale(s, s)
+
+    def paintEvent(self, event):
+        if self.scaling_method == 'slow':
+            if not self.media:
+                return
+            if self._current_scale < 1 and self.viewportTransform().m11() >= 1:
+                self._current_scale = 1
+                self._image.setPixmap(self.media)
+            # Down-sample image using best but expensive method, then upscale to keep scaling and view correct
+            elif self.viewportTransform().m11() < 1 and self.viewportTransform().m11() != self._current_scale:
+                self._current_scale = self.viewportTransform().m11()
+                scaled_size = self._image.pixmap().size() * self.viewportTransform().m11()
+                scaled_img = self.media.scaled(scaled_size, qtc.Qt.KeepAspectRatio, qtc.Qt.SmoothTransformation)
+                self._image.setPixmap(scaled_img.scaled(self.media.size(), qtc.Qt.KeepAspectRatio, qtc.Qt.FastTransformation))
+        super(ImageViewer, self).paintEvent(event)
 
     def mousePressEvent(self, event):
         if self._image.isUnderMouse():
             self.imageClicked.emit(self.mapToScene(event.pos()).toPoint())
         super(ImageViewer, self).mousePressEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        if self.rubberBandRect().size():
+            self.fitInView(self.mapToScene(self.rubberBandRect()).boundingRect(), qtc.Qt.KeepAspectRatio)
+        super(ImageViewer, self).mouseReleaseEvent(event)
+
+    def mouseDoubleClickEvent(self, event):
+        self.reset_zoom()
+        super(ImageViewer, self).mouseDoubleClickEvent(event)
