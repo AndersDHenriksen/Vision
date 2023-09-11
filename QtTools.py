@@ -99,6 +99,7 @@ class SetupLogger(qtc.QObject):
                             format='%(asctime)s.%(msecs)03d | %(levelname)5s | %(message)s')
         self.logger = logging.getLogger()
         self.log_out = log_q_text_edit
+        self.log_out.setStyleSheet('font-family: Monospace;')  # below command should be enough unless stylesheet is set
         self.log_out.setFont(qtg.QFontDatabase.systemFont(qtg.QFontDatabase.FixedFont))
         self._text_field_stream = TextFieldStream(log_q_text_edit)
 
@@ -123,7 +124,7 @@ class TextFieldStream(qtc.QObject, logging.Handler):
     def emit(self, record):
         try:
             msg = self.format(record)
-            self.log_out.setText(self.log_out.toPlainText() + msg + "\n")
+            self.log_out.setPlainText(self.log_out.toPlainText() + msg + "\n")
             self.log_out.moveCursor(qtg.QTextCursor.End)
         except Exception:
             self.handleError(record)
@@ -279,6 +280,8 @@ class TableModel(qtc.QAbstractTableModel):
         self.centered_columns = []
         self.min_column_width = self.table_view.columnWidth(0)
         self._signal_update.connect(self._update_table_slot)
+        if numbering is None:
+            self.table_view.verticalHeader().hide()
 
     def data(self, index, role):
         if role == qtc.Qt.DisplayRole:

@@ -152,7 +152,7 @@ class VisionUI(qtw.QMainWindow):
         self.spinner = QtTools.QSpinner(self.table)
 
         # Text field
-        self.log_output = qtw.QTextEdit(readOnly=True)
+        self.log_output = qtw.QPlainTextEdit(readOnly=True)
         main_column.layout().addWidget(self.log_output)
         self.log_output.setMaximumHeight(200)
         self.log_output.setMinimumHeight(80)
