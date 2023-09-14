@@ -435,3 +435,147 @@ class ImageViewer(qtw.QGraphicsView):
     def mouseDoubleClickEvent(self, event):
         self.reset_zoom()
         super(ImageViewer, self).mouseDoubleClickEvent(event)
+
+
+class TitleBar(qtw.QWidget):
+    def __init__(self, main_window, title, pixmap_logo=None):
+        super().__init__()
+        self.main_window = main_window
+        self.setFixedHeight(125)
+
+        stack_layout = qtw.QStackedLayout(self)
+        stack_layout.setStackingMode(qtw.QStackedLayout.StackAll)
+        title_widget = qtw.QWidget()
+        image_button_widget = qtw.QWidget()
+        stack_layout.addWidget(image_button_widget)
+        stack_layout.addWidget(title_widget)
+
+        title_layout = qtw.QHBoxLayout(title_widget)
+        self.title = qtw.QLabel(title, parent=title_widget)
+        self.title.setAlignment(qtc.Qt.AlignmentFlag.AlignCenter)
+        self.title.setStyleSheet('font-size: 48px; font-weight: bold; text-align: center;')  # background-color: yellow;
+        title_layout.addWidget(self.title)
+
+        layout = qtw.QHBoxLayout(image_button_widget)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+
+        if pixmap_logo:
+            pixmap_logo = pixmap_logo.scaledToHeight(100, qtc.Qt.SmoothTransformation)
+            logo = qtw.QLabel(pixmap=pixmap_logo)
+            layout.addWidget(logo)
+
+        layout.addStretch()
+        self.minimum_button = qtw.QPushButton(self, text='🗕', clicked=self.main_window.showMinimized)
+        self.maximum_button = qtw.QPushButton(self, text='🗖', clicked=self._maximize)
+        self.full_screen_button = qtw.QPushButton(self, text='⛶', clicked=self._full_screen)
+        self.close_button = qtw.QPushButton(self, text='🗙', clicked=self.main_window.close)
+        self.buttons = [self.minimum_button, self.maximum_button, self.full_screen_button, self.close_button]
+        for b in self.buttons:
+            layout.addWidget(b, alignment=qtc.Qt.AlignmentFlag.AlignTop)
+        self.apply_button_stylesheets()
+
+    def apply_button_stylesheets(self):
+        common_btn_style = f"QPushButton {{ background-color: transparent; border: 0;width: 50;height: 50; font-size: 16px}}"
+        for b in [self.minimum_button, self.maximum_button, self.full_screen_button]:
+            b.setStyleSheet(f"{common_btn_style}QPushButton:hover {{background-color: #ddd;}}QPushButton:pressed {{background-color: #aaa;}}")
+        self.close_button.setStyleSheet(f"{common_btn_style}QPushButton:hover {{background-color: #f00;color: white;}}QPushButton:pressed {{background-color: #f44;color: white;}}")
+
+    def _maximize(self):
+        if self.main_window.isMaximized():
+            self.main_window.showNormal()
+            self.maximum_button.setText('🗖')
+        else:
+            self.main_window.showMaximized()
+            self.maximum_button.setText('🗗')
+
+    def _full_screen(self):
+        if self.main_window.isFullScreen():
+            self.main_window.showNormal()
+        else:
+            self.main_window.showFullScreen()
+
+
+class FramelessMainWindow(qtw.QMainWindow):
+    def __init__(self, title='Vision Inspection', pixmap_logo=None):
+        super().__init__()
+        self._inside_margin = False
+        self._top = False
+        self._bottom = False
+        self._left = False
+        self._right = False
+        self._margin = 4
+        self.setMouseTracking(True)
+        self.setWindowFlags(self.windowFlags() | qtc.Qt.FramelessWindowHint)
+
+        self.main_widget = qtw.QWidget()
+        self.main_layout = qtw.QVBoxLayout(self.main_widget)
+        self.main_widget.setMouseTracking(True)  # Needed to propagate the mouseMove event to FramelessMainWindow
+        self.setCentralWidget(self.main_widget)
+        self.title_bar = TitleBar(self, title, pixmap_logo)
+        self.main_layout.addWidget(self.title_bar)
+
+    def check_mouse_in_margin(self, p):
+        if self.isMaximized() or self.isFullScreen():
+            return
+
+        self._inside_margin = True
+        self._left = p.x() <= self._margin
+        self._top = p.y() <= self._margin
+        self._right = self.width() - p.x() <= self._margin
+        self._bottom = self.height() - p.y() <= self._margin
+
+        if (self._top and self._left) or (self._bottom and self._right):
+            self.setCursor(qtc.Qt.SizeFDiagCursor)
+        elif (self._top and self._right) or (self._bottom and self._left):
+            self.setCursor(qtc.Qt.SizeBDiagCursor)
+        elif self._left or self._right:
+            self.setCursor(qtc.Qt.SizeHorCursor)
+        elif self._top or self._bottom:
+            self.setCursor(qtc.Qt.SizeVerCursor)
+        else:
+            self._inside_margin = False
+            self.unsetCursor()
+
+    def mousePressEvent(self, e):
+        if e.button() == qtc.Qt.LeftButton:
+            if self._inside_margin:
+                self._resize()
+            elif not (self.isMaximized() or self.isFullScreen()):
+                window = self.window().windowHandle()
+                window.startSystemMove()
+        return super().mousePressEvent(e)
+
+    def mouseMoveEvent(self, e):
+        self.check_mouse_in_margin(e.position())
+        return super().mouseMoveEvent(e)
+
+    def _resize(self):
+        window = self.window().windowHandle()
+        edges = qtc.Qt.Edge(0)
+        for b, e in zip([self._top, self._left, self._right, self._bottom],
+                        [qtc.Qt.Edge.TopEdge, qtc.Qt.Edge.LeftEdge, qtc.Qt.Edge.RightEdge, qtc.Qt.Edge.BottomEdge]):
+            if b:
+                edges |= e
+        window.startSystemResize(edges)
+
+    def set_frame_color(self, color):
+        if isinstance(color, str):
+            color = qtg.QColor(color)
+        p = qtg.QPalette()
+        b = qtg.QBrush(color)
+        p.setBrush(qtg.QPalette.Window, b)
+        self.setPalette(p)
+
+    def get_frame_color(self):
+        return self.palette().color(qtg.QPalette.Window)
+
+
+if __name__ == "__main__":
+    app = qtw.QApplication(sys.argv)
+    pixmap_logo = qtg.QPixmap("resources/ProInvent_Logo_Transparent.png")
+    window = FramelessMainWindow(pixmap_logo=pixmap_logo)
+    window.main_layout.addWidget(qtw.QTextEdit())
+    window.setGeometry(300, 300, 1200, 300)
+    window.show()
+    sys.exit(app.exec())
