@@ -447,6 +447,7 @@ class TitleBar(qtw.QWidget):
         stack_layout.setStackingMode(qtw.QStackedLayout.StackAll)
         title_widget = qtw.QWidget()
         image_button_widget = qtw.QWidget()
+        image_button_widget.setStyleSheet("background: transparent;")
         stack_layout.addWidget(image_button_widget)
         stack_layout.addWidget(title_widget)
 
