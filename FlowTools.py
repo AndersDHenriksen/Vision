@@ -33,7 +33,7 @@ def timeit():
     print(f"Call took: {time.time()-start:.3f} sec")
 
 
-def setup_logger(log_file_name=None, name=None):
+def setup_logger(log_file_name=None, name='vision', n_log_files=100):
     # logging.basicConfig(stream=sys.stdout, level=logging.DEBUG, format='%(asctime)s | %(levelname)5s | %(message)s')
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)
@@ -41,7 +41,7 @@ def setup_logger(log_file_name=None, name=None):
     handler.setFormatter(logging.Formatter('%(asctime)s | %(levelname)5s | %(message)s'))
     logger.addHandler(handler)
     if log_file_name is not None:
-        handler = RotatingFileHandler(log_file_name, maxBytes=5 * 1024 * 1024, backupCount=100)
+        handler = RotatingFileHandler(log_file_name, maxBytes=5 * 1024 * 1024, backupCount=n_log_files)
         logger.addHandler(handler)
         logger.handlers[-1].setFormatter(logger.handlers[0].formatter)
     return logger
