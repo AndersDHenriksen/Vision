@@ -995,6 +995,7 @@ def imread(image_path, enforce_grayscale=False, use_npy_file=False):
         if npy_path.exists():
             return np.load(npy_path)
     image = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE if enforce_grayscale else None)
+    assert image is not None, f"Can't read: {image_path}"
     if use_npy_file:
         np.save(npy_path, image)
     return image
