@@ -1,5 +1,6 @@
 import time
 import json
+import traceback
 import configparser
 from pathlib import Path
 import numpy as np
@@ -15,6 +16,31 @@ def get_camera_names():
     return [c.GetModelName() for c in pylon.TlFactory.GetInstance().EnumerateDevices()]
 
 
+# class ImageHandler(pylon.ImageEventHandler):
+#     def __init__(self, logger, camera_name='camera'):
+#         super().__init__()
+#         self.logger = logger
+#         self.camera_name = camera_name
+#         # Communication to main thread should be done with Queue, i.e. from queue import Queue
+#
+#     def OnImageGrabbed(self, camera, grab_result):
+#         # Try/except needed as code is run in a pylon thread context, where errors can't be properly reported from the
+#         # background thread to the foreground thread
+#         try:
+#             if not grab_result.GrabSucceeded():
+#                 self.logger.warning(f"Grab Failed for {self.camera_name}")
+#                 return
+#
+#             self.logger.info(f"Grab succeeded for {self.camera_name}")
+#             image = grab_result.Array
+#             # Do something with image
+#
+#         except Exception as e:
+#             self.logger.error("\n".join(traceback.format_tb(e.__traceback__) + [str(e)]))
+#         finally:
+#             grab_result.Release()
+
+
 class CameraWrapper:
 
     def __init__(self, exposure_time_us=None, trigger_method='software', enable_jumbo_frame=False):
@@ -23,16 +49,18 @@ class CameraWrapper:
         self.software_trigger = None
         self.camera = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateFirstDevice())
         self.camera.Open()
+        self.camera.UserSetSelector.Value = "Default"
+        self.camera.UserSetLoad.Execute()
         if enable_jumbo_frame and self.camera.IsGigE():
-            self.camera.GevSCPSPacketSize.SetValue(8192)
-            # self.camera.GevSCPD.SetValue(1000)
-            # self.camera.GevSCFTD.SetValue(1000)
+            self.camera.GevSCPSPacketSize.Value = 8192
+            # self.camera.GevSCPD.Value = 1000
+            # self.camera.GevSCFTD.Value = 1000
         if exposure_time_us is not None:
-            self.camera.ExposureAuto = 'Off'
+            self.camera.ExposureAuto.Value = 'Off'
             try:
-                self.camera.ExposureTimeAbs = exposure_time_us
+                self.camera.ExposureTimeAbs.Value = exposure_time_us
             except:
-                self.camera.ExposureTime = exposure_time_us
+                self.camera.ExposureTime.Value = exposure_time_us
         if trigger_method == 'streaming':
             self.setup_for_streaming()
         elif trigger_method == 'hardware':
@@ -40,25 +68,27 @@ class CameraWrapper:
         else:
             self.setup_for_software_trigger()
         self.camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly)  # pylon.GrabStrategy_OneByOne
+        # Alternatively, start grabbing but handle incoming images in camera thread
+        # self.handler = ImageHandler(...)  # Local reference to prevent garbage collection
+        # self.camera.RegisterImageEventHandler(self.handler, pylon.RegistrationMode_ReplaceAll, pylon.Cleanup_Delete)
+        # self.camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly, pylon.GrabLoop_ProvidedByInstantCamera)
         self.converter = None
         if self.camera.PixelFormat.Value == 'BayerRG8':
             self.converter = pylon.ImageFormatConverter()
             self.converter.OutputPixelFormat = pylon.PixelType_RGB8packed
 
     def setup_for_software_trigger(self):
-        self.camera.TriggerSelector = "FrameStart"
-        self.camera.TriggerMode = "On"
-        self.camera.TriggerSource = "Software"
+        self.camera.RegisterConfiguration(pylon.SoftwareTriggerConfiguration(), pylon.RegistrationMode_ReplaceAll,
+                                          pylon.Cleanup_Delete)
         self.software_trigger = True
 
     def setup_for_hardware_trigger(self):
-        self.camera.TriggerSelector = "FrameStart"
-        self.camera.TriggerMode = "On"
-        self.camera.TriggerSource = "Line1"
+        self.camera.TriggerMode.Value = "On"
+        self.camera.TriggerSource.Value = "Line1"
         self.software_trigger = False
 
     def setup_for_streaming(self):
-        self.camera.TriggerMode = "Off"
+        self.camera.TriggerMode.Value = "Off"
         self.software_trigger = False
 
     def grab(self, wait_for_image=True):
