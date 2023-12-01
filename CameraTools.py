@@ -5,7 +5,7 @@ import configparser
 from pathlib import Path
 import numpy as np
 import cv2
-from pypylon import pylon
+from pypylon import pylon, genicam
 try:
     from . import VisionTools as vt
 except ImportError:
@@ -59,7 +59,7 @@ class CameraWrapper:
             self.camera.ExposureAuto.Value = 'Off'
             try:
                 self.camera.ExposureTimeAbs.Value = exposure_time_us
-            except:
+            except genicam.LogicalErrorException:
                 self.camera.ExposureTime.Value = exposure_time_us
         if trigger_method == 'streaming':
             self.setup_for_streaming()
