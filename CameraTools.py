@@ -78,6 +78,8 @@ class CameraWrapper:
             self.converter.OutputPixelFormat = pylon.PixelType_RGB8packed
 
     def setup_for_software_trigger(self):
+        self.camera.TriggerMode.Value = 'On'
+        self.camera.TriggerSource.Value = 'Software'
         self.camera.RegisterConfiguration(pylon.SoftwareTriggerConfiguration(), pylon.RegistrationMode_ReplaceAll,
                                           pylon.Cleanup_Delete)
         self.software_trigger = True
