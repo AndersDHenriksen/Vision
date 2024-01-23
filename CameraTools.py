@@ -48,6 +48,7 @@ class CameraWrapper:
 
         self.software_trigger = None
         self.camera = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateFirstDevice())
+        self.camera.Open()
         self.camera.UserSetSelector.Value = "Default"
         self.camera.UserSetLoad.Execute()
         if enable_jumbo_frame and self.camera.IsGigE():
@@ -66,7 +67,6 @@ class CameraWrapper:
             self.setup_for_hardware_trigger()
         else:
             self.setup_for_software_trigger()
-        self.camera.Open()
         self.camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly)  # pylon.GrabStrategy_OneByOne
         # Alternatively, start grabbing but handle incoming images in camera thread
         # self.handler = ImageHandler(...)  # Local reference to prevent garbage collection
