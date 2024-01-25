@@ -98,10 +98,11 @@ class SetupLogger(qtc.QObject):
         logging.basicConfig(stream=sys.stdout, level=logging.DEBUG, datefmt="%Y-%m-%d %H:%M:%S",
                             format='%(asctime)s.%(msecs)03d | %(levelname)5s | %(message)s')
         self.logger = logging.getLogger()
-        self.log_out = log_q_text_edit
-        self.log_out.setStyleSheet('font-family: Monospace;')  # below command should be enough unless stylesheet is set
-        self.log_out.setFont(qtg.QFontDatabase.systemFont(qtg.QFontDatabase.FixedFont))
-        self._text_field_stream = TextFieldStream(log_q_text_edit)
+        if log_q_text_edit is not None:
+            self.log_out = log_q_text_edit
+            self.log_out.setStyleSheet('font-family: Monospace;')  # below command should be enough unless stylesheet is set
+            self.log_out.setFont(qtg.QFontDatabase.systemFont(qtg.QFontDatabase.FixedFont))
+            self._text_field_stream = TextFieldStream(log_q_text_edit)
 
         # Set up log handler
         handlers = []
