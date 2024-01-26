@@ -182,7 +182,7 @@ class Worker(qtc.QObject):
 
 class OwnThread(qtc.QObject):
     start_signal = qtc.Signal(tuple, dict)
-    done_signal = qtc.Signal()
+    done_signal = qtc.Signal(tuple)  # Can be used like:  self.decorated_fun.done_signal.connect(self.handle_result)
 
     def __init__(self, func, done_slot=None):
         super().__init__()
@@ -207,8 +207,8 @@ class OwnThread(qtc.QObject):
 
     @qtc.Slot(tuple, dict)
     def _run(self, args, kwargs):
-        self.orig_func(self.instance_func, *args, **kwargs)
-        self.done_signal.emit()
+        result = self.orig_func(self.instance_func, *args, **kwargs)
+        self.done_signal.emit(result)
 
 
 class QTimer(qtc.QTimer):  # Timer that can be started/stopped from all threads
@@ -368,11 +368,15 @@ class ImageViewer(qtw.QGraphicsView):
         self.setFrameShape(qtw.QFrame.NoFrame)
 
     def reset_zoom(self):
+        if self.media is None:
+            return
         self.resetTransform()
         self._min_scale = min(self.size().width() / self.media.size().width(), self.size().height() / self.media.size().height())
         self.scale(self._min_scale, self._min_scale)
 
     def setImage(self, pixmap=None):
+        if pixmap is None:
+            return
         if isinstance(pixmap, np.ndarray):
             h, w, *_ = pixmap.shape
             if pixmap.ndim == 2:  # if problem here consider the slower: https://pypi.org/project/qimage2ndarray/
