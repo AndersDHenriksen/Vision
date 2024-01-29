@@ -373,6 +373,8 @@ class ImageViewer(qtw.QGraphicsView):
         self.resetTransform()
         self._min_scale = min(self.size().width() / self.media.size().width(), self.size().height() / self.media.size().height())
         self.scale(self._min_scale, self._min_scale)
+        if self.media.size() != self.sceneRect().size():
+            self.setSceneRect(self.media.rect())
 
     def setImage(self, pixmap=None):
         if pixmap is None:
@@ -523,6 +525,8 @@ class FramelessMainWindow(qtw.QMainWindow):
 
     def check_mouse_in_margin(self, p):
         if self.isMaximized() or self.isFullScreen():
+            self._inside_margin = False
+            self.unsetCursor()
             return
 
         self._inside_margin = True
@@ -547,7 +551,7 @@ class FramelessMainWindow(qtw.QMainWindow):
         if e.button() == qtc.Qt.LeftButton:
             if self._inside_margin:
                 self._resize()
-            elif not (self.isMaximized() or self.isFullScreen()):
+            elif not self.isFullScreen():
                 window = self.window().windowHandle()
                 window.startSystemMove()
         return super().mousePressEvent(e)
