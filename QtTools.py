@@ -95,9 +95,8 @@ class SetupLogger(qtc.QObject):
 
     def __init__(self, log_q_text_edit=None, log_file_name=None):
         super().__init__()
-        logging.basicConfig(stream=sys.stdout, level=logging.DEBUG, datefmt="%Y-%m-%d %H:%M:%S",
-                            format='%(asctime)s.%(msecs)03d | %(levelname)5s | %(message)s')
-        self.logger = logging.getLogger()
+        self.logger = logging.getLogger('vision')
+        self.logger.setLevel(logging.DEBUG)
         if log_q_text_edit is not None:
             self.log_out = log_q_text_edit
             self.log_out.setStyleSheet('font-family: Monospace;')  # below command should be enough unless stylesheet is set
@@ -105,12 +104,14 @@ class SetupLogger(qtc.QObject):
             self._text_field_stream = TextFieldStream(log_q_text_edit)
 
         # Set up log handler
-        handlers = []
+        fmt = logging.Formatter(fmt='%(asctime)s.%(msecs)03d | %(levelname)5s | %(message)s', datefmt="%Y-%m-%d %H:%M:%S")
+        handlers = [logging.StreamHandler(sys.stdout)]
         if log_file_name is not None:
             handlers.append(RotatingFileHandler(log_file_name, maxBytes=5 * 1024 * 1024, backupCount=1))
         if log_q_text_edit is not None:
             handlers.append(self._text_field_stream)
         for handler in handlers:
+            handler.setFormatter(fmt)
             self.logger.addHandler(handler)
             self.logger.handlers[-1].setFormatter(self.logger.handlers[0].formatter)
 
