@@ -91,33 +91,26 @@ class QLed(qtw.QWidget):
         painter.drawEllipse(3, 3, 44, 44)
 
 
-class SetupLogger(qtc.QObject):
+def SetupLogger(log_q_text_edit=None, log_file_name=None):
+    logger = logging.getLogger('vision')
+    logger.setLevel(logging.DEBUG)
 
-    def __init__(self, log_q_text_edit=None, log_file_name=None):
-        super().__init__()
-        self.logger = logging.getLogger('vision')
-        self.logger.setLevel(logging.DEBUG)
-        if log_q_text_edit is not None:
-            self.log_out = log_q_text_edit
-            self.log_out.setStyleSheet('font-family: Monospace;')  # below command should be enough unless stylesheet is set
-            self.log_out.setFont(qtg.QFontDatabase.systemFont(qtg.QFontDatabase.FixedFont))
-            self._text_field_stream = TextFieldStream(log_q_text_edit)
-
-        # Set up log handler
-        fmt = logging.Formatter(fmt='%(asctime)s.%(msecs)03d | %(levelname)5s | %(message)s', datefmt="%Y-%m-%d %H:%M:%S")
-        handlers = [logging.StreamHandler(sys.stdout)]
-        if log_file_name is not None:
-            handlers.append(RotatingFileHandler(log_file_name, maxBytes=5 * 1024 * 1024, backupCount=1))
-        if log_q_text_edit is not None:
-            handlers.append(self._text_field_stream)
-        for handler in handlers:
-            handler.setFormatter(fmt)
-            self.logger.addHandler(handler)
-            self.logger.handlers[-1].setFormatter(self.logger.handlers[0].formatter)
+    # Set up log handlers
+    fmt = logging.Formatter(fmt='%(asctime)s.%(msecs)03d | %(levelname)5s | %(message)s', datefmt="%Y-%m-%d %H:%M:%S")
+    handlers = [logging.StreamHandler(sys.stdout)]
+    if log_file_name is not None:
+        handlers.append(RotatingFileHandler(log_file_name, maxBytes=5 * 1024 * 1024, backupCount=1))
+    if log_q_text_edit is not None:
+        log_q_text_edit.setStyleSheet('font-family: Monospace;')  # below command should be enough unless stylesheet is set
+        log_q_text_edit.setFont(qtg.QFontDatabase.systemFont(qtg.QFontDatabase.FixedFont))
+        handlers.append(TextFieldStream(log_q_text_edit))
+    for handler in handlers:
+        handler.setFormatter(fmt)
+        logger.addHandler(handler)
+    return logger
 
 
 class TextFieldStream(qtc.QObject, logging.Handler):
-
     def __init__(self, log_out):
         qtc.QObject.__init__(self)
         logging.Handler.__init__(self)
