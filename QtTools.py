@@ -510,7 +510,7 @@ class FramelessMainWindow(qtw.QMainWindow):
         self.setMouseTracking(True)
         self.setWindowFlags(self.windowFlags() | qtc.Qt.FramelessWindowHint)
 
-        self.main_widget = qtw.QWidget()
+        self.main_widget = qtw.QWidget(self)
         self.main_layout = qtw.QVBoxLayout(self.main_widget)
         self.main_widget.setMouseTracking(True)  # Needed to propagate the mouseMove event to FramelessMainWindow
         self.setCentralWidget(self.main_widget)
