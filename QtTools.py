@@ -545,12 +545,15 @@ class FramelessMainWindow(qtw.QMainWindow):
         if e.button() == qtc.Qt.LeftButton:
             if self._inside_margin:
                 self._resize()
-            elif not self.isFullScreen():
-                window = self.window().windowHandle()
-                window.startSystemMove()
+            # elif not self.isFullScreen():  # Moved to mouseMoveEvent below, to prevent bug where single click disabled hover effects
+            #     window = self.window().windowHandle()
+            #     window.startSystemMove()
         return super().mousePressEvent(e)
 
     def mouseMoveEvent(self, e):
+        if e.buttons() == qtc.Qt.LeftButton and not self.isFullScreen():
+            window = self.window().windowHandle()
+            window.startSystemMove()
         self.check_mouse_in_margin(e.position())
         return super().mouseMoveEvent(e)
 
