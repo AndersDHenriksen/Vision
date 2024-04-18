@@ -27,8 +27,9 @@ splash = Splash('resources/SplashScreen.png',
                 minify_script=True)
 
 a.datas = [fp for fp in a.datas if 'pylonCXP' not in fp[0]]  # Remove pylonCXP
-a.datas = [fp for fp in a.datas if '_genicam' not in fp[0]]  # Remove _genicam.cp39-win_amd64.pyd which is already in binaries
-a.datas = [fp for fp in a.datas if '_pylon' not in fp[0]]    # Remove _pylon.cp39-win_amd64.pyd which is already in binaries
+a.binaries = [fp for fp in a.binaries if 'pylonCXP' not in fp[0]]
+a.datas = [fp for fp in a.datas if 'DataProcessing' not in fp[0]]  # Remove pylonDataProcessing
+a.binaries = [fp for fp in a.binaries if 'DataProcessing' not in fp[0]]
 
 exe = EXE(pyz,
           a.scripts,
