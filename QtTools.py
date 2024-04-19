@@ -110,19 +110,31 @@ def SetupLogger(log_q_text_edit=None, log_file_name=None):
     return logger
 
 
-class TextFieldStream(qtc.QObject, logging.Handler):
+class TextFieldStream(logging.Handler):
     def __init__(self, log_out):
-        qtc.QObject.__init__(self)
         logging.Handler.__init__(self)
-        self.log_out = log_out
+        self.text_passer = TextPasser(log_out)
 
     def emit(self, record):
         try:
             msg = self.format(record)
-            self.log_out.setPlainText(self.log_out.toPlainText() + msg + "\n")
-            self.log_out.moveCursor(qtg.QTextCursor.End)
+            self.text_passer.signal_write.emit(msg)
         except Exception:
             self.handleError(record)
+
+
+class TextPasser(qtc.QObject):
+    signal_write = qtc.Signal(str)
+
+    def __init__(self, log_out):
+        qtc.QObject.__init__(self)
+        self.log_out = log_out
+        self.signal_write.connect(self._add_text)
+
+    @qtc.Slot()
+    def _add_text(self, msg):
+        self.log_out.setPlainText(self.log_out.toPlainText() + msg + "\n")
+        self.log_out.moveCursor(qtg.QTextCursor.End)
 
 
 class TagMonitor(qtc.QObject):  # Designed with EthernetIP in mind
