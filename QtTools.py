@@ -96,7 +96,7 @@ def SetupLogger(log_q_text_edit=None, log_file_name=None):
     logger.setLevel(logging.DEBUG)
 
     # Set up log handlers
-    fmt = logging.Formatter(fmt='%(asctime)s.%(msecs)03d | %(levelname)5s | %(message)s', datefmt="%Y-%m-%d %H:%M:%S")
+    fmt = logging.Formatter(fmt='%(asctime)s.%(msecs)03d | %(levelname)7s | %(message)s', datefmt="%Y-%m-%d %H:%M:%S")
     handlers = [logging.StreamHandler(sys.stdout)]
     if log_file_name is not None:
         handlers.append(RotatingFileHandler(log_file_name, maxBytes=5 * 1024 * 1024, backupCount=1))
