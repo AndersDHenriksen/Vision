@@ -16,6 +16,9 @@ class EipComm:  # EthernetIP communication
     def read(self, tag):
         return self.plc.read(tag).value
 
+    def read_multiples(self, tags):
+        return [t.value for t in self.plc.read(*tags)]
+
     def write(self, tag, value):
         self.plc.write((tag, value))
 
