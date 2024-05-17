@@ -1,4 +1,6 @@
 from time import sleep
+from functools import cache
+from collections.abc import Iterable
 
 
 class EipComm:  # EthernetIP communication
@@ -81,3 +83,46 @@ class TurckIoComm:  # Communication to turck input/output module.
             attribute=attribute_offset + channel,
             data_type=DataTypes.usint)  #connected=True/False  # Not sure if this could be needed
         return bool(response.value)
+
+class OpcuaComm:
+    def __init__(self, ip, port=4840):
+        from opcua import Client  # pip install opcua
+        from opcua.ua import VariantType as types
+        self.client = Client(f"opc.tcp://{ip}:{port}")
+        self.client.connect()
+        self.opcua_types = {bool: types.Boolean, int: types.Int32, float: types.Float, str: types.ByteString}
+
+    def close(self):
+        self.client.disconnect()
+
+    @cache
+    def get_node(self, node_id):
+        return self.client.get_node(node_id)
+
+    def package_value(self, value, type):
+        from opcua import ua
+        assert type is not None or type in self.opcua_types, "OPCUA cannot guess type, please specify it."
+        type = type or self.opcua_types[type(value)]
+        variant_value = ua.Variant(value, type)
+        return variant_value
+
+    def read(self, node_id):
+        node = self.get_node(node_id)
+        value = node.get_value()
+        return value
+
+    def read_multiples(self, node_ids):
+        nodes = [self.get_node(id) for id in node_ids]
+        values = self.client.get_values(nodes)
+        return values
+
+    def write(self, node_id, value, type=None):
+        node = self.get_node(node_id)
+        node.set_value(self.package_value(value, type))
+
+    def write_multiples(self, node_ids, values, types):
+        if not isinstance(types, Iterable):
+            types = len(values) * [types]
+        variant_values = [self.package_value(v, t) for v, t in zip(values, types)]
+        nodes = [self.get_node(id) for id in node_ids]
+        self.client.set_values(nodes, variant_values)
