@@ -446,6 +446,20 @@ def tesseract_ocr(image_bgr, is_digit=False):
     pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract"
     return pytesseract.image_to_string(image_bgr, config='digits --psm 7' if is_digit else '--psm 7')  # Maybe add: --oem 3
 
+def easy_ocr(image_bgr):
+    """
+    Try to find text in image (ocr) using easyocr.
+    :param image_bgr: Input image to find text in
+    :type image_bgr: np.ndarray
+    :return: Identified text string
+    :rtype: str
+    """
+    # From https://github.com/JaidedAI/EasyOCR
+    import easyocr  # pip install easyocr
+    if not hasattr(easy_ocr, 'reader'):
+        easy_ocr.reader = easyocr.Reader(['en'])  # this needs to run only once to load the model into memory
+    return easy_ocr.reader.readtext(image_bgr)
+
 
 class OutlineComparer:
     def __init__(self, training_mask):
