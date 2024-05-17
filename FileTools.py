@@ -189,6 +189,29 @@ Path.copy = _copy
 Path.move_to_subfolder = _move_to_subfolder
 Path.delete = _delete
 
+
+class FilePath(Path):  # Only works in Python 3.12+
+
+    def __int__(self, pure_path):
+        super().__init__(pure_path)
+
+    def copy(self, target):
+        """ Monkey patch for shutil.copy. """
+        Path(target).parent.mkdir(exist_ok=True)
+        return shutil.copy(self, target) if self.is_file() else copy_tree(str(self), str(target))
+
+    def move_to_subfolder(self, subfolder_name):
+        """ Move file to subfolder. Subfolder will be created if non-existing. """
+        new_path = self.parent / subfolder_name / self.name
+        new_path.parent.mkdir(exist_ok=True)
+        return self.rename(new_path)
+
+    def delete(self):
+        """ Delete file or folder if it exists. """
+        if self.exists():
+            return shutil.rmtree(self) if self.is_dir() else self.unlink()
+
+
 if __name__ == "__main__":
     # convert_images_in_folders(r"D:\DataMeasured", "*.png")
     pass
