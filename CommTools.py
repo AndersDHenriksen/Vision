@@ -91,6 +91,7 @@ class OpcuaComm:
         self.client = Client(f"opc.tcp://{ip}:{port}")
         self.client.connect()
         self.opcua_types = {bool: types.Boolean, int: types.Int32, float: types.Float, str: types.ByteString}
+        self.wait_time_ms = 50 / 1000
 
     def close(self):
         self.client.disconnect()
@@ -106,9 +107,12 @@ class OpcuaComm:
         variant_value = ua.Variant(value, type)
         return variant_value
 
-    def read(self, node_id):
+    def read(self, node_id, wait_till_true=False):
         node = self.get_node(node_id)
         value = node.get_value()
+        while not value and wait_till_true:
+            sleep(self.wait_time_ms)
+            value = node.get_value()
         return value
 
     def read_multiples(self, node_ids):
