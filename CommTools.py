@@ -100,11 +100,11 @@ class OpcuaComm:
     def get_node(self, node_id):
         return self.client.get_node(node_id)
 
-    def package_value(self, value, type):
+    def package_value(self, value, value_type):
         from opcua import ua
-        assert type is not None or type in self.opcua_types, "OPCUA cannot guess type, please specify it."
-        type = type or self.opcua_types[type(value)]
-        variant_value = ua.Variant(value, type)
+        assert value_type is not None or type(value) in self.opcua_types, "OPCUA cannot guess type, please specify it."
+        value_type = value_type or self.opcua_types[type(value)]
+        variant_value = ua.Variant(value, value_type)
         return variant_value
 
     def read(self, node_id, wait_till_true=False):
