@@ -85,12 +85,14 @@ class TurckIoComm:  # Communication to turck input/output module.
         return bool(response.value)
 
 class OpcuaComm:
-    def __init__(self, ip, port=4840):
+    def __init__(self, ip, port=4840, pack_into_data_value=False, use_bytestring=False):  # TODO make into parameters. Also handle list/array input
         from opcua import Client  # pip install opcua
         from opcua.ua import VariantType as types
         self.client = Client(f"opc.tcp://{ip}:{port}")
         self.client.connect()
-        self.opcua_types = {bool: types.Boolean, int: types.Int32, float: types.Float, str: types.ByteString}
+        self.pack_into_data_value = pack_into_data_value
+        str_type = types.ByteString if use_bytestring else types.String
+        self.opcua_types = {bool: types.Boolean, int: types.Int32, float: types.Float, str: str_type}  # Could also be ByteString
         self.wait_time_ms = 50 / 1000
 
     def close(self):
@@ -105,7 +107,7 @@ class OpcuaComm:
         assert value_type is not None or type(value) in self.opcua_types, "OPCUA cannot guess type, please specify it."
         value_type = value_type or self.opcua_types[type(value)]
         variant_value = ua.Variant(value, value_type)
-        return variant_value
+        return ua.DataValue(variant_value) if self.pack_into_data_value else variant_value
 
     def read(self, node_id, wait_till_true=False):
         node = self.get_node(node_id)
@@ -120,9 +122,9 @@ class OpcuaComm:
         values = self.client.get_values(nodes)
         return values
 
-    def write(self, node_id, value, type=None):
+    def write(self, node_id, value, value_type=None):
         node = self.get_node(node_id)
-        node.set_value(self.package_value(value, type))
+        node.set_value(self.package_value(value, value_type))
 
     def write_multiples(self, node_ids, values, types):
         if not isinstance(types, Iterable):
