@@ -85,14 +85,14 @@ class TurckIoComm:  # Communication to turck input/output module.
         return bool(response.value)
 
 class OpcuaComm:
-    def __init__(self, ip, port=4840, pack_into_data_value=False, use_bytestring=False):  # TODO make into parameters. Also handle list/array input
+    def __init__(self, ip, port=4840, pack_into_data_value=False, use_bytestring=False):
         from opcua import Client  # pip install opcua
         from opcua.ua import VariantType as types
         self.client = Client(f"opc.tcp://{ip}:{port}")
         self.client.connect()
         self.pack_into_data_value = pack_into_data_value
         str_type = types.ByteString if use_bytestring else types.String
-        self.opcua_types = {bool: types.Boolean, int: types.Int32, float: types.Float, str: str_type}  # Could also be ByteString
+        self.opcua_types = {bool: types.Boolean, int: types.Int32, float: types.Float, str: str_type}
         self.wait_time_ms = 50 / 1000
 
     def close(self):
