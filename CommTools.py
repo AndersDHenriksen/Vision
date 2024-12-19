@@ -104,8 +104,10 @@ class OpcuaComm:
 
     def package_value(self, value, value_type):
         from opcua import ua
-        assert value_type is not None or type(value) in self.opcua_types, "OPCUA cannot guess type, please specify it."
-        value_type = value_type or self.opcua_types[type(value)]
+        if value_type is None:
+            input_type = type(value[0]) if isinstance(value, (list, tuple)) else type(value)
+            assert input_type in self.opcua_types, "OPCUA cannot guess type, please specify it."
+            value_type = self.opcua_types[input_type]
         variant_value = ua.Variant(value, value_type)
         return ua.DataValue(variant_value) if self.pack_into_data_value else variant_value
 
@@ -123,6 +125,8 @@ class OpcuaComm:
         return values
 
     def write(self, node_id, value, value_type=None):
+        if isinstance(value, (list, tuple)) and len(value) == 0:
+            return
         node = self.get_node(node_id)
         node.set_value(self.package_value(value, value_type))
 
