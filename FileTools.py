@@ -192,7 +192,7 @@ Path.delete = _delete
 
 class FilePath(Path):  # Only works in Python 3.12+
 
-    def __int__(self, pure_path):
+    def __init__(self, pure_path):
         super().__init__(pure_path)
 
     def copy(self, target):
