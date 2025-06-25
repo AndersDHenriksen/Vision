@@ -112,27 +112,43 @@ class OpcuaComm:
         return ua.DataValue(variant_value) if self.pack_into_data_value else variant_value
 
     def read(self, node_id, wait_till_true=False):
-        node = self.get_node(node_id)
-        value = node.get_value()
+        try:
+            node = self.get_node(node_id)
+            value = node.get_value()
+        except Exception:
+            print(f"Failed to read node-id={node_id}.")
+            raise
         while not value and wait_till_true:
             sleep(self.wait_time_ms)
             value = node.get_value()
         return value
 
     def read_multiples(self, node_ids):
-        nodes = [self.get_node(id) for id in node_ids]
-        values = self.client.get_values(nodes)
-        return values
+        try:
+            nodes = [self.get_node(id) for id in node_ids]
+            values = self.client.get_values(nodes)
+            return values
+        except Exception:
+            print(f"Failed to read node-ids={node_ids}.")
+            raise
 
     def write(self, node_id, value, value_type=None):
         if isinstance(value, (list, tuple)) and len(value) == 0:
             return
-        node = self.get_node(node_id)
-        node.set_value(self.package_value(value, value_type))
+        try:
+            node = self.get_node(node_id)
+            node.set_value(self.package_value(value, value_type))
+        except Exception:
+            print(f"Failed to write node-id={node_id}, value={value}, type={type(value)}.")
+            raise
 
     def write_multiples(self, node_ids, values, types):
         if not isinstance(types, Iterable):
             types = len(values) * [types]
         variant_values = [self.package_value(v, t) for v, t in zip(values, types)]
-        nodes = [self.get_node(id) for id in node_ids]
-        self.client.set_values(nodes, variant_values)
+        try:
+            nodes = [self.get_node(id) for id in node_ids]
+            self.client.set_values(nodes, variant_values)
+        except Exception:
+            print(f"Failed to write node-ids={node_ids}, values={values}, types={[type(v) for v in values]}.")
+            raise
