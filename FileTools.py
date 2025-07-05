@@ -5,6 +5,7 @@ from pathlib import Path
 import urllib.request
 import zipfile
 import tarfile
+import numpy as np
 import cv2
 
 
@@ -149,7 +150,7 @@ def convert_images_in_folders(img_dir, pattern="*.bmp", output_extension="jpg"):
     """ Find certain image type and convert them to save space, e.g. bmp -> jpg """
     for img_path in sorted(Path(img_dir).rglob(pattern)):
         img = cv2.imread(str(img_path))
-        if img.ptp(axis=2).max() == 0:
+        if np.ptp(img, axis=2).max() == 0:
             img = img[:, :, 0]
         success = cv2.imwrite(str(img_path.parent / f"{img_path.stem}.{output_extension}"), img)
         if not success:

@@ -169,7 +169,7 @@ def ensure_image_for_drawing(image, color, inplace):
     if image.dtype == bool:
         image = 255 * image.astype(np.uint8)
         converted = True
-    if image.ndim == 2 and np.array(color).ptp() > 0:
+    if image.ndim == 2 and np.ptp(color) > 0:
         image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
         converted = True
     if inplace and converted:
@@ -371,7 +371,7 @@ def save_video_clip(file_name, frame_list, frame_rate=20):
     if isinstance(frame_list[0], str) or isinstance(frame_list[0], Path):
         frame_list = [cv2.imread(str(fp)) for fp in frame_list]
     frame_sizes = np.array([f.shape for f in frame_list])
-    if frame_sizes.ptp(axis=0).any():
+    if np.ptp(frame_sizes, axis=0).any():
         print("Warning: Frames have different sizes will crop to same size")
         min_size = frame_sizes.min(axis=0)
         frame_list = [frame[:min_size[0], :min_size[1], :] for frame in frame_list]
@@ -409,7 +409,7 @@ def video_frame_generator(video_path):
         if not ret:
             break
         if is_gray is None:
-            is_gray = frame.ptp(axis=-1).max() == 0
+            is_gray = np.ptp(frame, axis=-1).max() == 0
         if is_gray:
             yield frame[:, :, 0]
         else:
